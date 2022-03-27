@@ -1,0 +1,23 @@
+﻿<Project>
+
+  <PropertyGroup>
+    <MinClientVersion>2.12</MinClientVersion>
+    <Authors>Dingping Zhang</Authors>
+    <Version>0.1.0</Version>
+    <Copyright>Copyright (c) 2022 Dingping Zhang</Copyright>
+    <PackageProjectUrl>https://github.com/DingpingZhang/SimpleFactoryGenerator</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/DingpingZhang/SimpleFactoryGenerator</RepositoryUrl>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <DefaultLanguage>en-US</DefaultLanguage>
+    <Description>A simple factory source generator that enables the pattern to not violate the open-close principle.</Description>
+    <PackageTags>design-pattern;design;pattern;simple-factory;factory;solid principle;open-close-principle</PackageTags>
+    <NoWarn>$(NoWarn);1701;1702;CS1591;NU1701</NoWarn>
+    <NoPackageAnalysis>true</NoPackageAnalysis>
+    <LangVersion>preview</LangVersion>
+    <EnableNETAnalyzers>true</EnableNETAnalyzers>
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+</Project>
