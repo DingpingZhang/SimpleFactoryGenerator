@@ -46,7 +46,7 @@ namespace SimpleFactoryGenerator.SourceGenerator
             {
                 yield return baseType;
 
-                baseType = symbol.BaseType;
+                baseType = baseType.BaseType;
             }
         }
 

@@ -49,6 +49,11 @@ namespace SimpleFactoryGenerator.SourceGenerator
                 })
                 .ToList();
 
+            if (!productClasses.Any())
+            {
+                return;
+            }
+
             var invalidClasses = productClasses.Select(item => item.@class).FilterNoParameterlessCtorClasses().ToList();
             if (invalidClasses.Any())
             {
