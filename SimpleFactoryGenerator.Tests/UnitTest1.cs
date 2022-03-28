@@ -8,11 +8,11 @@ namespace SimpleFactoryGenerator.Tests
         [Fact]
         public void Test1()
         {
-            ISimpleFactory<IProduct, string> factory = SimpleFactory
-                .For<IProduct, string>()
+            var factory = SimpleFactory
+                .For<IProduct, ProductType>()
                 .WithCache();
-            IProduct product1 = factory.Create(Consts.ProductName);
-            IProduct product2 = factory.Create("1");
+            IProduct product1 = factory.Create(ProductType.A);
+            IProduct product2 = factory.Create(ProductType.B);
         }
     }
 
@@ -25,6 +25,12 @@ namespace SimpleFactoryGenerator.Tests
 
     }
 
+    public enum ProductType : byte
+    {
+        A,
+        B,
+    }
+
     public class WorkRecordAttribute : ProductOfSimpleFactoryAttribute<IProduct, string>
     {
         public WorkRecordAttribute(string key) : base(key)
@@ -33,12 +39,13 @@ namespace SimpleFactoryGenerator.Tests
     }
 
     //[ProductOfSimpleFactory<IProduct, string>(Consts.ProductName)]
-    [WorkRecord(Consts.ProductName)]
+    //[WorkRecord(Consts.ProductName)]
+    [ProductOfSimpleFactory<IProduct, ProductType>(ProductType.A)]
     internal class Product1 : IProduct
     {
     }
 
-    [ProductOfSimpleFactory<IProduct, string>("12")]
+    [ProductOfSimpleFactory<IProduct, ProductType>(ProductType.B)]
     [ProductOfSimpleFactory<IProduct2, string>("2")]
     internal class Product2 : IProduct, IProduct2
     {
