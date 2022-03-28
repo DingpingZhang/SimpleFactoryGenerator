@@ -109,7 +109,7 @@ namespace SimpleFactoryGenerator.SourceGenerator
 
                 invalidClasses = groupList
                     .Select(item => item.@class)
-                    .Where(item => !item.Interfaces.Any(@interface => @interface.Equals(target, SymbolEqualityComparer.Default)))
+                    .Where(item => !item.AllInterfaces.Any(@interface => @interface.Equals(target, SymbolEqualityComparer.Default)))
                     .ToList();
 
                 if (invalidClasses.Any())

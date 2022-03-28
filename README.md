@@ -1,4 +1,4 @@
-﻿# SimpleFactoryGenerator [![version](https://img.shields.io/badge/nuget-0.1.1-orange)](https://www.nuget.org/packages/SimpleFactoryGenerator)
+﻿# SimpleFactoryGenerator [![version](https://img.shields.io/badge/nuget-0.1.2-orange)](https://www.nuget.org/packages/SimpleFactoryGenerator)
 
 本库用于辅助简单工厂模式（Simple Factory Pattern）的实现，即在编译时自动生成简单工厂中的条件分支语句（`switch-case` 或 `if-else`），从而解决该模式违背“开闭原则”（[The Open/Closed Principle](https://en.wikipedia.org/wiki/Open%E2%80%93closed_principle)）的问题。
 
