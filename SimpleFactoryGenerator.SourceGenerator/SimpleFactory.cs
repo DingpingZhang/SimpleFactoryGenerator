@@ -18,6 +18,13 @@ namespace SimpleFactoryGenerator.Implementation
 {infos.For(info => $@"
         private class {info.Namespace.Replace(".", "_")}_{info.TargetInterfaceName}Factory : ISimpleFactory<{info.TargetInterfaceDeclaration}, {info.KeyType}>
         {{
+            public System.Collections.Generic.IReadOnlyCollection<{info.KeyType}> Keys {{ get; }} = new []
+            {{
+{info.Products.For(info => $@"
+                {info.Label},
+")}
+            }};
+
             public {info.TargetInterfaceDeclaration} Create({info.KeyType} key)
             {{
                 return key switch

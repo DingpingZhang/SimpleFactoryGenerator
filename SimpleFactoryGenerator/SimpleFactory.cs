@@ -7,7 +7,7 @@ namespace SimpleFactoryGenerator
     {
         private static readonly ConcurrentDictionary<string, object> Cache = new();
 
-        public static ISimpleFactory<TTarget, TKey> For<TTarget, TKey>()
+        public static ISimpleFactory<TTarget, TKey> For<TTarget, TKey>() where TTarget : class
         {
             Type targetType = typeof(TTarget);
             string @namespace = targetType.Namespace.Replace(".", "_");
