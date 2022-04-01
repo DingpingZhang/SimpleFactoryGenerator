@@ -13,6 +13,7 @@ namespace SimpleFactoryGenerator.Tests
                 .WithCache();
             IProduct product1 = factory.Create(ProductType.A);
             IProduct product2 = factory.Create(ProductType.B);
+            IProduct product3 = factory.Create(ProductType.D);
         }
 
 

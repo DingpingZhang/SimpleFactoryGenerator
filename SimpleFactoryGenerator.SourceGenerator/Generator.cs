@@ -132,10 +132,17 @@ namespace SimpleFactoryGenerator.SourceGenerator
                     return;
                 }
 
-                var labelToClasses = groupList.Select(item => new ProductInfo
+                var labelToClasses = groupList.Select(item =>
                 {
-                    Label = GetLabel(item.attribute),
-                    ProductClassDeclaration = item.@class.ToDeclaration(),
+                    bool isPrivate = item.@class.DeclaredAccessibility is Accessibility.Private;
+                    return new ProductInfo
+                    {
+                        Label = GetLabel(item.attribute),
+                        IsPrivate = isPrivate,
+                        ProductClassDeclaration = isPrivate
+                            ? $"{item.@class.ContainingType.ToDisplayString()}+{item.@class.Name}"
+                            : item.@class.ToDeclaration(),
+                    };
                 });
 
                 infos.Add(new FactoryInfo

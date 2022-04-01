@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using static SimpleFactoryGenerator.SourceGenerator.TemplateExtensions;
 
 namespace SimpleFactoryGenerator.SourceGenerator
 {
@@ -30,7 +31,11 @@ namespace SimpleFactoryGenerator.Implementation
                 return key switch
                 {{
 {info.Products.For(product => $@"
+{Text(product.IsPrivate ? $@"
+                    {product.Label} => ({info.TargetInterfaceDeclaration})System.Activator.CreateInstance(System.Type.GetType(""{product.ProductClassDeclaration}"")),
+" : $@"
                     {product.Label} => ({info.TargetInterfaceDeclaration})new {product.ProductClassDeclaration}(),
+")}
 ")}
                     _ => throw new System.IndexOutOfRangeException($""The factory does not contain products with '{{key}}'.""),
                 }};
