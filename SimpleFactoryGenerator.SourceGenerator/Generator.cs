@@ -14,9 +14,6 @@ namespace SimpleFactoryGenerator.SourceGenerator
     {
         public void Execute(GeneratorExecutionContext context)
         {
-            const int targetTypeIndex = 0;
-            const int keyTypeIndex = 1;
-
             //System.Diagnostics.Debugger.Launch();
 
             if (context.SyntaxReceiver is not SyntaxReceiver receiver)
@@ -26,10 +23,12 @@ namespace SimpleFactoryGenerator.SourceGenerator
 
             Compilation compilation = context.Compilation;
 
-            INamedTypeSymbol? attributeSymbol = compilation
+            INamedTypeSymbol? genericAttributeSymbol = compilation
                 .GetTypeByMetadataName("SimpleFactoryGenerator.ProductOfSimpleFactoryAttribute`2")?
                 .ConstructUnboundGenericType();
-            if (attributeSymbol is null)
+            INamedTypeSymbol? attributeSymbol = compilation
+                .GetTypeByMetadataName("SimpleFactoryGenerator.ProductOfSimpleFactoryAttribute");
+            if (genericAttributeSymbol is null || attributeSymbol is null)
             {
                 return;
             }
@@ -44,8 +43,11 @@ namespace SimpleFactoryGenerator.SourceGenerator
                         .Where(@class => @class is not null)
                         // WORKAROUND: The @interface must not be null here.
                         .Select(@class => @class!)
-                        .Select(@class => (@class, attributes: @class.GetAttributes(attributeSymbol).ToList()))
-                        .Where(item => item.attributes.Any());
+                        .Select(@class => (
+                            @class,
+                            genericAttributes: @class.GetAttributes(genericAttributeSymbol).ToList(),
+                            attributes: @class.GetAttributes(attributeSymbol).ToList()))
+                        .Where(item => item.genericAttributes.Any() || item.attributes.Any());
                 })
                 .ToList();
 
@@ -77,11 +79,16 @@ namespace SimpleFactoryGenerator.SourceGenerator
             }
 
             var groups = productClasses
-                .SelectMany(info => info.attributes
+                .SelectMany(info => info.genericAttributes
                     .Select(attribute => (
                         info.@class,
                         attribute,
-                        target: attribute.type!.TypeArguments[targetTypeIndex])))
+                        target: GetTargetSymbolFromGeneric(attribute.type)))
+                    .Concat(info.attributes
+                    .Select(attribute => (
+                        info.@class,
+                        attribute,
+                        target: GetTargetSymbol(attribute.ctorArgs)))))
                 .GroupBy(item => item.target)
                 .ToList();
 
@@ -91,12 +98,12 @@ namespace SimpleFactoryGenerator.SourceGenerator
                 var groupList = group.ToList();
                 var target = group.Key;
 
-                var keyType = groupList
-                    .Select(item => item.attribute.type!.TypeArguments[keyTypeIndex].ToDeclaration())
+                var keyTypes = groupList
+                    .Select(item => GetKeyDeclaration(item.attribute))
                     .Distinct()
                     .ToList();
 
-                if (keyType.Count > 1)
+                if (keyTypes.Count > 1)
                 {
                     var locations = groupList.SelectMany(item => item.@class.Locations);
                     foreach (var location in locations)
@@ -127,7 +134,7 @@ namespace SimpleFactoryGenerator.SourceGenerator
 
                 var labelToClasses = groupList.Select(item => new ProductInfo
                 {
-                    Label = item.attribute.label.ToDisplayValue(),
+                    Label = GetLabel(item.attribute),
                     ProductClassDeclaration = item.@class.ToDeclaration(),
                 });
 
@@ -136,7 +143,7 @@ namespace SimpleFactoryGenerator.SourceGenerator
                     Namespace = target.ContainingNamespace.ToDisplayString(),
                     TargetInterfaceName = target.Name,
                     TargetInterfaceDeclaration = target.ToDeclaration(),
-                    KeyType = keyType.Single(),
+                    KeyType = keyTypes.Single(),
                     Products = labelToClasses.ToList(),
                 });
             }
@@ -148,6 +155,39 @@ namespace SimpleFactoryGenerator.SourceGenerator
         public void Initialize(GeneratorInitializationContext context)
         {
             context.RegisterForSyntaxNotifications(() => new SyntaxReceiver());
+        }
+
+        private static ITypeSymbol GetTargetSymbolFromGeneric(INamedTypeSymbol symbol)
+        {
+            const int targetTypeIndex = 0;
+
+            return symbol.TypeArguments[targetTypeIndex];
+        }
+
+        private static ITypeSymbol GetTargetSymbol(IReadOnlyList<TypedConstant> constants)
+        {
+            const int targetTypeIndex = 0;
+
+            return (ITypeSymbol)constants[targetTypeIndex].Value!;
+        }
+
+        private static string GetKeyDeclaration((IReadOnlyList<TypedConstant> ctorArgs, INamedTypeSymbol type) info)
+        {
+            const int keyTypeIndex = 1;
+
+            var symbol = info.type.IsGenericType
+                ? info.type.TypeArguments[keyTypeIndex]
+                : (ITypeSymbol)info.ctorArgs[keyTypeIndex].Value!;
+
+            return symbol.ToDeclaration();
+        }
+
+        private static string GetLabel((IReadOnlyList<TypedConstant> ctorArgs, INamedTypeSymbol type) info)
+        {
+            const int genericKeyIndex = 0;
+            const int keyIndex = 2;
+
+            return info.ctorArgs[info.type.IsGenericType ? genericKeyIndex : keyIndex].ToDisplayValue();
         }
 
         private class SyntaxReceiver : ISyntaxReceiver

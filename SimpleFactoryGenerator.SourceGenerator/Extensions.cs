@@ -50,18 +50,16 @@ namespace SimpleFactoryGenerator.SourceGenerator
             }
         }
 
-        public static IEnumerable<(TypedConstant label, INamedTypeSymbol type)> GetAttributes(this INamedTypeSymbol symbol, INamedTypeSymbol attributeSymbol)
+        public static IEnumerable<(IReadOnlyList<TypedConstant> ctorArgs, INamedTypeSymbol type)> GetAttributes(this INamedTypeSymbol symbol, INamedTypeSymbol attributeSymbol)
         {
-            const int argumentIndex = 0;
-
             return from attribute in symbol.GetAttributes()
                    let type = attribute.AttributeClass
                    let productAttribute = type.GetSelfAndBaseTypes()
                        .OfType<INamedTypeSymbol>()
                        .FirstOrDefault(item => attributeSymbol.EqualAttribute(item))
                    where productAttribute != null
-                   let label = attribute.ConstructorArguments[argumentIndex]
-                   select (label, productAttribute);
+                   let ctorArgs = (IReadOnlyList<TypedConstant>)attribute.ConstructorArguments
+                   select (ctorArgs, productAttribute);
         }
 
         public static bool EqualAttribute(this INamedTypeSymbol expected, INamedTypeSymbol? actual)

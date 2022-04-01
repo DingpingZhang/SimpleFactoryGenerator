@@ -25,7 +25,7 @@ namespace SimpleFactoryGenerator.SourceGenerator
 
         public static readonly DiagnosticDescriptor TheSameKeyType = new(
             "SFG003",
-            "Classes with the same target interface must have the same key",
+            "Classes with the same target interface must have the same key type",
             "If the target interfaces are the same, their key types must also be the same, consider using the same type of key",
             SimpleFactoryGenerator,
             DiagnosticSeverity.Error,
