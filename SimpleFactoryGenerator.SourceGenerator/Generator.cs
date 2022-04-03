@@ -14,7 +14,7 @@ namespace SimpleFactoryGenerator.SourceGenerator
     {
         public void Execute(GeneratorExecutionContext context)
         {
-            System.Diagnostics.Debugger.Launch();
+            //System.Diagnostics.Debugger.Launch();
 
             if (context.SyntaxReceiver is not SyntaxReceiver receiver)
             {
