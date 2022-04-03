@@ -38,6 +38,14 @@ namespace SimpleFactoryGenerator.SourceGenerator
             SimpleFactoryGenerator,
             DiagnosticSeverity.Error,
             true);
+
+        public static readonly DiagnosticDescriptor InTheSameAssembly = new(
+            "SFG005",
+            "The class must be in the same assembly as the interface",
+            "The class '{0}' is not in the same assembly as the interface '{1}' it implements, consider placing it in the same assembly.",
+            SimpleFactoryGenerator,
+            DiagnosticSeverity.Error,
+            true);
     }
 #pragma warning restore RS2008 // Enable analyzer release tracking
 }

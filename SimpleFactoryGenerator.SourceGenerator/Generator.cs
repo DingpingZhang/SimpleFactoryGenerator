@@ -118,7 +118,6 @@ namespace SimpleFactoryGenerator.SourceGenerator
                     .Select(item => item.@class)
                     .Where(item => !item.AllInterfaces.Any(@interface => @interface.Equals(target, SymbolEqualityComparer.Default)))
                     .ToList();
-
                 if (invalidClasses.Any())
                 {
                     foreach (var invalidClass in invalidClasses)
@@ -126,6 +125,23 @@ namespace SimpleFactoryGenerator.SourceGenerator
                         foreach (var location in invalidClass.Locations)
                         {
                             context.ReportDiagnostic(Diagnostic.Create(ImplementTargetInterface, location, target.Name, invalidClass.Name));
+                        }
+                    }
+
+                    return;
+                }
+
+                invalidClasses = groupList
+                    .Select(item => item.@class)
+                    .Where(item => !item.ContainingAssembly.Equals(target.ContainingAssembly, SymbolEqualityComparer.Default))
+                    .ToList();
+                if (invalidClasses.Any())
+                {
+                    foreach (var invalidClass in invalidClasses)
+                    {
+                        foreach (var location in invalidClass.Locations)
+                        {
+                            context.ReportDiagnostic(Diagnostic.Create(InTheSameAssembly, location, invalidClass.Name, target.Name));
                         }
                     }
 
