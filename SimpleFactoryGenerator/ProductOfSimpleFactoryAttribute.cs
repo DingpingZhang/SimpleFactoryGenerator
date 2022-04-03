@@ -9,12 +9,4 @@ namespace SimpleFactoryGenerator
         {
         }
     }
-
-    [AttributeUsage(AttributeTargets.Class, AllowMultiple = true, Inherited = false)]
-    public class ProductOfSimpleFactoryAttribute : Attribute
-    {
-        public ProductOfSimpleFactoryAttribute(Type targetType, Type keyType, object key)
-        {
-        }
-    }
 }

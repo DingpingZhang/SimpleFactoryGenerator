@@ -16,8 +16,7 @@ namespace SimpleFactoryGenerator.Tests
             IProduct product3 = factory.Create(ProductType.D);
         }
 
-
-        [ProductOfSimpleFactory(typeof(IProduct), typeof(ProductType), ProductType.D)]
+        [Product(ProductType.D)]
         private class Product4 : IProduct
         {
         }
@@ -40,9 +39,9 @@ namespace SimpleFactoryGenerator.Tests
         D,
     }
 
-    public class WorkRecordAttribute : ProductOfSimpleFactoryAttribute<IProduct, string>
+    public class ProductAttribute : ProductOfSimpleFactoryAttribute<IProduct, ProductType>
     {
-        public WorkRecordAttribute(string key) : base(key)
+        public ProductAttribute(ProductType key) : base(key)
         {
         }
     }
@@ -50,19 +49,19 @@ namespace SimpleFactoryGenerator.Tests
     //[ProductOfSimpleFactory<IProduct, string>(Consts.ProductName)]
     //[WorkRecord(Consts.ProductName)]
     //[ProductOfSimpleFactory<IProduct, ProductType>(ProductType.A)]
-    [ProductOfSimpleFactory(typeof(IProduct), typeof(ProductType), ProductType.A)]
+    [Product(ProductType.A)]
     internal class Product1 : IProduct
     {
     }
 
     //[ProductOfSimpleFactory<IProduct, ProductType>(ProductType.B)]
     //[ProductOfSimpleFactory<IProduct2, string>("2")]
-    [ProductOfSimpleFactory(typeof(IProduct), typeof(ProductType), ProductType.B)]
+    [Product(ProductType.B)]
     internal class Product2 : IProduct, IProduct2
     {
     }
 
-    [ProductOfSimpleFactory(typeof(IProduct), typeof(ProductType), ProductType.C)]
+    [Product(ProductType.C)]
     public class Product3 : IProduct
     {
 

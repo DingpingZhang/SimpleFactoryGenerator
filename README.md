@@ -1,4 +1,4 @@
-﻿# SimpleFactoryGenerator [![version](https://img.shields.io/badge/nuget-0.2.0-orange)](https://www.nuget.org/packages/SimpleFactoryGenerator)
+﻿# SimpleFactoryGenerator [![version](https://img.shields.io/badge/nuget-0.3.0-orange)](https://www.nuget.org/packages/SimpleFactoryGenerator)
 
 本库用于辅助简单工厂模式（Simple Factory Pattern）的实现，即在编译时自动生成简单工厂中的条件分支语句（`switch-case` 或 `if-else`），从而解决该模式违背“开闭原则”（[The Open/Closed Principle](https://en.wikipedia.org/wiki/Open%E2%80%93closed_principle)）的问题。
 
@@ -46,9 +46,9 @@ public static void Main()
 }
 ```
 
-在使用本仓库后，将省去 `SimpleFactory` 的编写，而代替地，需要在具体的 Product 类型上声明一个 `ProductOfSimpleFactoryAttribute<T, K>`。你已经注意到：该 Attribute 使用了泛型，这需要 [C# 11](https://docs.microsoft.com/en-us/dotnet/csharp/programming-guide/generics/generics-and-attributes) 的支持，为此，你需要使用 VS2022，并在 `*.csproj` 文件中配置：`<LangVersion>preview</LangVersion>`。
+在使用本仓库后，将省去 `SimpleFactory` 的编写，而代替地，需要在具体的 `Product` 类型上声明一个 `ProductOfSimpleFactoryAttribute<T, K>`。你已经注意到：该 Attribute 使用了泛型，这需要 [C# 11](https://docs.microsoft.com/en-us/dotnet/csharp/programming-guide/generics/generics-and-attributes) 的支持，为此，你需要使用 VS2022，并在 `*.csproj` 文件中配置：`<LangVersion>preview</LangVersion>`。
 
-~~虽然也可以实现非泛型的版本以兼容 Legacy Code，但那种语法长得太丑了，反正我自己的项目已经满足这一条件了，为什么不抛弃旧时代呢？~~
+> 如果你的项目无法配置 C# 11 或使用 VS 2022，导致无法**直接**使用 Generic-Attribute，可以参考 1.1 小节，自定义一个 Attribute 继承自 `ProductOfSimpleFactoryAttribute<T, K>` 即可（在 C# 11 之前允许定义泛型 Attribute，只是无法直接使用而已）。
 
 ```csharp
 public interface IProduct
@@ -83,10 +83,19 @@ public static void Main()
 
 ### 1.1 自定义 Attribute
 
-如果你觉得 `ProductOfSimpleFactoryAttribute<T, K>` 声明太长、太丑、太麻烦，可以自定义一个 Attribute 继承它，也是生效的，如：
+如果你觉得 `ProductOfSimpleFactoryAttribute<T, K>` 声明太长、太丑、太麻烦（或者无法使用 C# 11 的泛型 Attribute 语法），可以自定义一个 Attribute 继承它，也是生效的，如：
 
 ```csharp
+// Generic
 public class ProductAttribute : ProductOfSimpleFactoryAttribute<IPorduct, string>
+{
+    public ProductAttribute(string productName) : base(productName)
+    {
+    }
+}
+
+// Non-generic
+public class ProductAttribute : ProductOfSimpleFactoryAttribute
 {
     public ProductAttribute(string productName) : base(productName)
     {

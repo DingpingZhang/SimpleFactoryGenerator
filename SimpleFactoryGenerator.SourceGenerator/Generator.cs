@@ -14,7 +14,7 @@ namespace SimpleFactoryGenerator.SourceGenerator
     {
         public void Execute(GeneratorExecutionContext context)
         {
-            //System.Diagnostics.Debugger.Launch();
+            System.Diagnostics.Debugger.Launch();
 
             if (context.SyntaxReceiver is not SyntaxReceiver receiver)
             {
@@ -23,12 +23,10 @@ namespace SimpleFactoryGenerator.SourceGenerator
 
             Compilation compilation = context.Compilation;
 
-            INamedTypeSymbol? genericAttributeSymbol = compilation
+            INamedTypeSymbol? attributeSymbol = compilation
                 .GetTypeByMetadataName("SimpleFactoryGenerator.ProductOfSimpleFactoryAttribute`2")?
                 .ConstructUnboundGenericType();
-            INamedTypeSymbol? attributeSymbol = compilation
-                .GetTypeByMetadataName("SimpleFactoryGenerator.ProductOfSimpleFactoryAttribute");
-            if (genericAttributeSymbol is null || attributeSymbol is null)
+            if (attributeSymbol is null)
             {
                 return;
             }
@@ -45,9 +43,8 @@ namespace SimpleFactoryGenerator.SourceGenerator
                         .Select(@class => @class!)
                         .Select(@class => (
                             @class,
-                            genericAttributes: @class.GetAttributes(genericAttributeSymbol).ToList(),
                             attributes: @class.GetAttributes(attributeSymbol).ToList()))
-                        .Where(item => item.genericAttributes.Any() || item.attributes.Any());
+                        .Where(item => item.attributes.Any());
                 })
                 .ToList();
 
@@ -79,16 +76,11 @@ namespace SimpleFactoryGenerator.SourceGenerator
             }
 
             var groups = productClasses
-                .SelectMany(info => info.genericAttributes
+                .SelectMany(info => info.attributes
                     .Select(attribute => (
                         info.@class,
                         attribute,
-                        target: GetTargetSymbolFromGeneric(attribute.type)))
-                    .Concat(info.attributes
-                    .Select(attribute => (
-                        info.@class,
-                        attribute,
-                        target: GetTargetSymbol(attribute.ctorArgs)))))
+                        target: GetTargetSymbolFromGeneric(attribute.type))))
                 .GroupBy(item => item.target)
                 .ToList();
 
@@ -185,13 +177,6 @@ namespace SimpleFactoryGenerator.SourceGenerator
             const int targetTypeIndex = 0;
 
             return symbol.TypeArguments[targetTypeIndex];
-        }
-
-        private static ITypeSymbol GetTargetSymbol(IReadOnlyList<TypedConstant> constants)
-        {
-            const int targetTypeIndex = 0;
-
-            return (ITypeSymbol)constants[targetTypeIndex].Value!;
         }
 
         private static string GetKeyDeclaration((IReadOnlyList<TypedConstant> ctorArgs, INamedTypeSymbol type) info)

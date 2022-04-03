@@ -28,17 +28,20 @@ namespace SimpleFactoryGenerator.Implementation
 
             public {info.TargetInterfaceDeclaration} Create({info.KeyType} key)
             {{
-                return key switch
+                switch(key)
                 {{
 {info.Products.For(product => $@"
 {Text(product.IsPrivate ? $@"
-                    {product.Label} => ({info.TargetInterfaceDeclaration})System.Activator.CreateInstance(System.Type.GetType(""{product.ProductClassDeclaration}"")),
+                    case {product.Label}:
+                        return ({info.TargetInterfaceDeclaration})System.Activator.CreateInstance(System.Type.GetType(""{product.ProductClassDeclaration}""));
 " : $@"
-                    {product.Label} => ({info.TargetInterfaceDeclaration})new {product.ProductClassDeclaration}(),
+                    case {product.Label}:
+                        return new {product.ProductClassDeclaration}();
 ")}
 ")}
-                    _ => throw new System.IndexOutOfRangeException($""The factory does not contain products with '{{key}}'.""),
-                }};
+                    default:
+                        throw new System.IndexOutOfRangeException($""The factory does not contain products with '{{key}}'."");
+                }}
             }}
         }}
 
