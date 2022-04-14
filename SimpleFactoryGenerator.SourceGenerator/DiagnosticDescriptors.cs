@@ -2,7 +2,6 @@ using Microsoft.CodeAnalysis;
 
 namespace SimpleFactoryGenerator.SourceGenerator
 {
-#pragma warning disable RS2008 // Enable analyzer release tracking
     internal static class DiagnosticDescriptors
     {
         private const string SimpleFactoryGenerator = nameof(SimpleFactoryGenerator);
@@ -47,5 +46,4 @@ namespace SimpleFactoryGenerator.SourceGenerator
             DiagnosticSeverity.Error,
             true);
     }
-#pragma warning restore RS2008 // Enable analyzer release tracking
 }

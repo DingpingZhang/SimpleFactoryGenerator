@@ -23,6 +23,11 @@ namespace SimpleFactoryGenerator
             return contains;
         }
 
+        public static IEnumerable<TTarget> CreateAll<TTarget, TKey>(this ISimpleFactory<TTarget, TKey> factory) where TTarget : class
+        {
+            return factory.Keys.Select(key => factory.Create(key));
+        }
+
         private class CachedSimpleFactory<TTarget, TKey> : ISimpleFactory<TTarget, TKey> where TTarget : class
         {
             private readonly ConcurrentDictionary<TKey, TTarget> _cache = new();

@@ -3,6 +3,30 @@ using Xunit;
 
 namespace SimpleFactoryGenerator.Tests
 {
+    public class ClassBase
+    {
+
+    }
+
+    public class ClassAttribute : ProductOfSimpleFactoryAttribute<ClassBase, string>
+    {
+        public ClassAttribute(string key) : base(key)
+        {
+        }
+    }
+
+    [Class(nameof(ProductOfClass1))]
+    public class ProductOfClass1 : ClassBase
+    {
+
+    }
+
+    [Class(nameof(ProductOfClass2))]
+    public class ProductOfClass2 : ClassBase
+    {
+
+    }
+
     public class UnitTest1
     {
         [Fact]
@@ -14,6 +38,10 @@ namespace SimpleFactoryGenerator.Tests
             IProduct product1 = factory.Create(ProductType.A);
             IProduct product2 = factory.Create(ProductType.B);
             IProduct product3 = factory.Create(ProductType.D);
+
+            var f = SimpleFactory.For<ClassBase, string>();
+            var p1 = f.Create(nameof(ProductOfClass1));
+            var p2 = f.Create(nameof(ProductOfClass2));
         }
 
         [Product(ProductType.D)]
