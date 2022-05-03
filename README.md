@@ -1,14 +1,16 @@
 ﻿# SimpleFactoryGenerator [![version](https://img.shields.io/badge/nuget-0.4.0-orange)](https://www.nuget.org/packages/SimpleFactoryGenerator)
 
-本库用于辅助简单工厂模式（Simple Factory Pattern）的实现，即在编译时自动生成简单工厂中的条件分支语句（`switch-case` 或 `if-else`），从而解决该模式违背“开闭原则”（[The Open/Closed Principle](https://en.wikipedia.org/wiki/Open%E2%80%93closed_principle)）的问题。
+English | [中文](./README.zh-CN.md)
 
-## 为什么使用？
+This library is used to assist in the implementation of the *Simple Factory Pattern* by automatically generating conditional branch structure in the factory class at **compile time**, thus solving the problem of the pattern violating the ["open-close principle"](https://en.wikipedia.org/wiki/Open%E2%80%93closed_principle).
 
-关于简单工厂模式（[factory-comparison](https://refactoringguru.cn/design-patterns/factory-comparison)）的介绍与使用，此处不予赘述。该模式的一个缺点是：需要维护一个（可能十分巨大）的条件分支结构，用于根据给定的枚举类型创建具体的实例。因此，该模式违背了“对扩展开放，对修改封闭”的设计原则，本仓库解决了这个问题。思路非常简单：设计原则只是为了便于**人类**维护代码的一套经验规则，用于弥补人类思维的一些局限性，那么，只需要将这部分难以维护的代码交给编译器维护，就不存在违背“设计原则”的说法了。
+## Why?
 
-## 如何使用？
+The introduction and use of the *Simple Factory Pattern* will not be described here. One of the drawbacks of this pattern is the need to manually maintain a (potentially huge) conditional branch structure for creating concrete instances of a given enumeration type (including strings). As a result, the pattern violates the "open to extensions, closed to modifications" design principle, which is solved by this library. The idea is very simple: design principles are a set of rules of thumb to facilitate the maintenance of code by *Humans*, to compensate for some of the limitations of human thinking. Therefore, there is no violation of the *Design Principles* by simply leaving this difficult-to-maintain part of the code to the compiler.
 
-我们先来看一个传统方式实现的简单工厂，以便于对比本仓库所代替的部分：
+## How?
+
+Let's start by looking at a simple factory implemented in the traditional way, in order to facilitate comparison of the parts replaced by this library.
 
 ```csharp
 public interface IProduct
@@ -27,8 +29,9 @@ public class SimpleFactory
 {
     public IProduct Create(string type)
     {
-        // NOTE: 此处便是违背了开闭原则的分支判断，例：当加入 Product3 后，
-        // 需要手动在此添加一个分支 `"product_c" => new Product3(),`
+        // Here is the branch judgment that violates the open-close principle,
+        // for example, when adding `Product3`, you need to manually add
+        // a branch here (`"product_c" => new Product3(),`).
         return type switch
         {
             "product_a" => new Product1(),
@@ -38,7 +41,7 @@ public class SimpleFactory
     }
 }
 
-// 使用
+// Using
 public static void Main()
 {
     var factory = new SimpleFactory();
@@ -46,12 +49,12 @@ public static void Main()
 }
 ```
 
-在使用本仓库后，将省去 `SimpleFactory` 的编写，而代替地，需要在具体的 `Product` 类型上声明一个 `ProductOfSimpleFactoryAttribute<T, K>`。你已经注意到：该 Attribute 使用了泛型，这需要 [C# 11](https://docs.microsoft.com/en-us/dotnet/csharp/programming-guide/generics/generics-and-attributes) 的支持，为此，你需要使用 VS2022，并在 `*.csproj` 文件中配置：`<LangVersion>preview</LangVersion>`。
+After using this library, the writing of `SimpleFactory` will be omitted and instead, a `ProductOfSimpleFactoryAttribute<T, K>` needs to be declared on the concrete `Product` type. You have already noticed: the Attribute uses generics, which requires [C# 11](https://docs.microsoft.com/en-us/dotnet/csharp/programming-guide/generics/generics-and-attributes) support, for which you need to use Visual Studio 2022 and configure it in the `*.csproj` file: `<LangVersion>preview</LangVersion>`.
 
-> 如果你的项目无法配置 C# 11 或使用 VS 2022，导致无法**直接**使用 Generic-Attribute，可以参考 1.1 小节，自定义一个 Attribute 继承自 `ProductOfSimpleFactoryAttribute<T, K>` 即可（在 C# 11 之前允许定义泛型 Attribute，只是无法直接使用而已）。
+> If your project cannot be configured for C# 11 or uses Visual Studio 2022, which prevents you from **directly** using Generic-Attribute, you can refer to section 1.1 and customize an Attribute to inherit from `ProductOfSimpleFactoryAttribute<T, K>` (the Generic-Attribute definitions were allowed before C# 11, just not directly available).
 
 ```csharp
-// 也可以是 abstract class，或普通的 class，不强制要求是 interface。
+// It can also be an abstract class, or a normal class, and it is not mandatory to be an interface.
 public interface IProduct
 {
 }
@@ -66,25 +69,27 @@ public class Product2 : IProduct
 {
 }
 
-// 使用
+// Using
 public static void Main()
 {
-    // SimpleFactory 静态类由本仓库提供。
+    // The SimpleFactory static class are provided by this library.
     var factory = SimpleFactory
         .For<IProduct, string>()
-        // .WithCache() 是可选的，使用后将帮助实现“享元模式”，缓存已创建的实例（即多次创建 key 相同的实例，将返回同一个实例。）
+        // .WithCache() is optional and when used will help implement the *Flyweight Pattern*
+        // that caches created instances (i.e. instances with the same key are created multiple times
+        // and the same instance is returned.)
         .WithCache();
     IProduct product = factory.Create("product_a");
 }
 ```
 
-## 高级使用
+## Advanced
 
-其实没有多高级，就这么简单的一个需求，你还指望有什么高级的东西？
+It's not really that advanced, it's such a simple requirement, what do you expect from something advanced? :)
 
-### 1.1 自定义 Attribute
+### 1.1 Custom Attribute
 
-如果你觉得 `ProductOfSimpleFactoryAttribute<T, K>` 声明太长、太丑、太麻烦（或者无法使用 C# 11 的泛型 Attribute 语法），可以自定义一个 Attribute 继承它，也是生效的，如：
+If you think the `ProductOfSimpleFactoryAttribute<T, K>` declaration too long, too ugly, too cumbersome (or can't use C# 11's Generic-Attribute syntax), you can customize an Attribute to inherit it.
 
 ```csharp
 // Generic
@@ -109,9 +114,9 @@ public class Product1 : IProduct
 }
 ```
 
-### 1.2 映射到多个目标接口
+### 1.2 Mapping to multiple target interfaces
 
-对于同一个具体产品类型，是允许供应给多个不同的目标接口的，如：
+For the same concrete product type, it is allowed to supply to multiple different target interfaces.
 
 ```csharp
 [Product("product_a")]
@@ -120,7 +125,7 @@ public class Product1 : IProduct, IMobile
 {
 }
 
-// 使用
+// Using
 public static void Main()
 {
     var factory = SimpleFactory.For<IProduct, string>()；
