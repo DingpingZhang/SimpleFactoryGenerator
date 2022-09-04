@@ -8,7 +8,7 @@ namespace SimpleFactoryGenerator.Tests
 
     }
 
-    public class ClassAttribute : ProductOfSimpleFactoryAttribute<ClassBase, string>
+    public class ClassAttribute : ProductAttribute<ClassBase, string>
     {
         public ClassAttribute(string key) : base(key)
         {
@@ -67,23 +67,23 @@ namespace SimpleFactoryGenerator.Tests
         D,
     }
 
-    public class ProductAttribute : ProductOfSimpleFactoryAttribute<IProduct, ProductType>
+    public class ProductAttribute : ProductAttribute<IProduct, ProductType>
     {
         public ProductAttribute(ProductType key) : base(key)
         {
         }
     }
 
-    //[ProductOfSimpleFactory<IProduct, string>(Consts.ProductName)]
+    //[Product<IProduct, string>(Consts.ProductName)]
     //[WorkRecord(Consts.ProductName)]
-    //[ProductOfSimpleFactory<IProduct, ProductType>(ProductType.A)]
+    //[Product<IProduct, ProductType>(ProductType.A)]
     [Product(ProductType.A)]
     internal class Product1 : IProduct
     {
     }
 
-    //[ProductOfSimpleFactory<IProduct, ProductType>(ProductType.B)]
-    //[ProductOfSimpleFactory<IProduct2, string>("2")]
+    //[Product<IProduct, ProductType>(ProductType.B)]
+    //[Product<IProduct2, string>("2")]
     [Product(ProductType.B)]
     internal class Product2 : IProduct, IProduct2
     {

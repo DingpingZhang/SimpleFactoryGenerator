@@ -49,9 +49,9 @@ public static void Main()
 }
 ```
 
-After using this library, the writing of `SimpleFactory` will be omitted and instead, a `ProductOfSimpleFactoryAttribute<T, K>` needs to be declared on the concrete `Product` type. You have already noticed: the Attribute uses generics, which requires [C# 11](https://docs.microsoft.com/en-us/dotnet/csharp/programming-guide/generics/generics-and-attributes) support, for which you need to use Visual Studio 2022 and configure it in the `*.csproj` file: `<LangVersion>preview</LangVersion>`.
+After using this library, the writing of `SimpleFactory` will be omitted and instead, a `ProductAttribute<T, K>` needs to be declared on the concrete `Product` type. You have already noticed: the Attribute uses generics, which requires [C# 11](https://docs.microsoft.com/en-us/dotnet/csharp/programming-guide/generics/generics-and-attributes) support, for which you need to use Visual Studio 2022 and configure it in the `*.csproj` file: `<LangVersion>preview</LangVersion>`.
 
-> If your project cannot be configured for C# 11 or uses Visual Studio 2022, which prevents you from **directly** using Generic-Attribute, you can refer to section 1.1 and customize an Attribute to inherit from `ProductOfSimpleFactoryAttribute<T, K>` (the Generic-Attribute definitions were allowed before C# 11, just not directly available).
+> If your project cannot be configured for C# 11 or uses Visual Studio 2022, which prevents you from **directly** using Generic-Attribute, you can refer to section 1.1 and customize an Attribute to inherit from `ProductAttribute<T, K>` (the Generic-Attribute definitions were allowed before C# 11, just not directly available).
 
 ```csharp
 // It can also be an abstract class, or a normal class, and it is not mandatory to be an interface.
@@ -59,12 +59,12 @@ public interface IProduct
 {
 }
 
-[ProductOfSimpleFactory<IProduct, string>("product_a")]
+[Product<IProduct, string>("product_a")]
 public class Product1 : IProduct
 {
 }
 
-[ProductOfSimpleFactory<IProduct, string>("product_b")]
+[Product<IProduct, string>("product_b")]
 public class Product2 : IProduct
 {
 }
@@ -89,11 +89,11 @@ It's not really that advanced, it's such a simple requirement, what do you expec
 
 ### 1.1 Custom Attribute
 
-If you think the `ProductOfSimpleFactoryAttribute<T, K>` declaration too long, too ugly, too cumbersome (or can't use C# 11's Generic-Attribute syntax), you can customize an Attribute to inherit it.
+If you think the `ProductAttribute<T, K>` declaration too long, too ugly, too cumbersome (or can't use C# 11's Generic-Attribute syntax), you can customize an Attribute to inherit it.
 
 ```csharp
 // Generic
-public class ProductAttribute : ProductOfSimpleFactoryAttribute<IPorduct, string>
+public class ProductAttribute : ProductAttribute<IPorduct, string>
 {
     public ProductAttribute(string productName) : base(productName)
     {
@@ -101,7 +101,7 @@ public class ProductAttribute : ProductOfSimpleFactoryAttribute<IPorduct, string
 }
 
 // Non-generic
-public class ProductAttribute : ProductOfSimpleFactoryAttribute
+public class ProductAttribute : ProductAttribute
 {
     public ProductAttribute(string productName) : base(productName)
     {

@@ -24,7 +24,7 @@ namespace SimpleFactoryGenerator.SourceGenerator
             Compilation compilation = context.Compilation;
 
             INamedTypeSymbol? attributeSymbol = compilation
-                .GetTypeByMetadataName("SimpleFactoryGenerator.ProductOfSimpleFactoryAttribute`2")?
+                .GetTypeByMetadataName("SimpleFactoryGenerator.ProductAttribute`2")?
                 .ConstructUnboundGenericType();
             if (attributeSymbol is null)
             {
@@ -208,7 +208,7 @@ namespace SimpleFactoryGenerator.SourceGenerator
 
             public void OnVisitSyntaxNode(SyntaxNode syntaxNode)
             {
-                if (syntaxNode is ClassDeclarationSyntax { AttributeLists: { Count: > 0 } } interfaceDeclarationSyntax)
+                if (syntaxNode is ClassDeclarationSyntax { AttributeLists.Count: > 0 } interfaceDeclarationSyntax)
                 {
                     CandidateClasses.Add(interfaceDeclarationSyntax);
                 }
