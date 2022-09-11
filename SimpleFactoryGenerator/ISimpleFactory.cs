@@ -2,9 +2,9 @@ using System.Collections.Generic;
 
 namespace SimpleFactoryGenerator;
 
-public interface ISimpleFactory<out TTarget, TKey> where TTarget : class
+public interface ISimpleFactory<TKey, out TProduct> where TProduct : class
 {
     IReadOnlyCollection<TKey> Keys { get; }
 
-    TTarget Create(TKey key);
+    TProduct Create(TKey feed);
 }

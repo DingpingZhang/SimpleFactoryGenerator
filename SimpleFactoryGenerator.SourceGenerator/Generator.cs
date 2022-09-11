@@ -38,9 +38,7 @@ namespace SimpleFactoryGenerator.SourceGenerator
                     SemanticModel model = compilation.GetSemanticModel(group.Key);
                     return group
                         .Select(@class => model.GetDeclaredSymbol(@class))
-                        .Where(@class => @class is not null)
-                        // WORKAROUND: The @interface must not be null here.
-                        .Select(@class => @class!)
+                        .OfType<INamedTypeSymbol>()
                         .Select(@class => (
                             @class,
                             attributes: @class.GetAttributes(attributeSymbol).ToList()))
@@ -178,14 +176,14 @@ namespace SimpleFactoryGenerator.SourceGenerator
 
         private static ITypeSymbol GetTargetSymbolFromGeneric(INamedTypeSymbol symbol)
         {
-            const int targetTypeIndex = 0;
+            const int targetTypeIndex = 1;
 
             return symbol.TypeArguments[targetTypeIndex];
         }
 
         private static string GetKeyDeclaration((IReadOnlyList<TypedConstant> ctorArgs, INamedTypeSymbol type) info)
         {
-            const int keyTypeIndex = 1;
+            const int keyTypeIndex = 0;
 
             var symbol = info.type.IsGenericType
                 ? info.type.TypeArguments[keyTypeIndex]

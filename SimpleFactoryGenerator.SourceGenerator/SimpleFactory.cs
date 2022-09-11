@@ -17,7 +17,7 @@ namespace SimpleFactoryGenerator.Implementation
     internal static class Generated
     {{
 {infos.For(info => $@"
-        private class {info.Namespace.Replace(".", "_")}_{info.TargetInterfaceName}Factory : ISimpleFactory<{info.TargetInterfaceDeclaration}, {info.KeyType}>
+        private class {info.Namespace.Replace(".", "_")}_{info.TargetInterfaceName}Factory : ISimpleFactory<{info.KeyType}, {info.TargetInterfaceDeclaration}>
         {{
             public System.Collections.Generic.IReadOnlyCollection<{info.KeyType}> Keys {{ get; }} = new []
             {{

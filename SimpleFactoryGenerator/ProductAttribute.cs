@@ -3,7 +3,7 @@ using System;
 namespace SimpleFactoryGenerator;
 
 [AttributeUsage(AttributeTargets.Class, AllowMultiple = true, Inherited = false)]
-public class ProductAttribute<TTarget, TKey> : Attribute where TTarget : class
+public class ProductAttribute<TKey, TProduct> : Attribute where TProduct : class
 {
     public ProductAttribute(TKey key)
     {

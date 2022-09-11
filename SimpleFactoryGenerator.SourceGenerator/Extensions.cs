@@ -56,7 +56,7 @@ namespace SimpleFactoryGenerator.SourceGenerator
                    let type = attribute.AttributeClass
                    let productAttribute = type.GetSelfAndBaseTypes()
                        .OfType<INamedTypeSymbol>()
-                       .FirstOrDefault(item => attributeSymbol.EqualAttribute(item))
+                       .FirstOrDefault(attributeSymbol.EqualAttribute)
                    where productAttribute != null
                    let ctorArgs = (IReadOnlyList<TypedConstant>)attribute.ConstructorArguments
                    select (ctorArgs, productAttribute);

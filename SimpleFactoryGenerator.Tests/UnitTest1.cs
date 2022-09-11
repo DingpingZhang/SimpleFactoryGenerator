@@ -8,7 +8,7 @@ namespace SimpleFactoryGenerator.Tests
 
     }
 
-    public class ClassAttribute : ProductAttribute<ClassBase, string>
+    public class ClassAttribute : ProductAttribute<string, ClassBase>
     {
         public ClassAttribute(string key) : base(key)
         {
@@ -33,13 +33,13 @@ namespace SimpleFactoryGenerator.Tests
         public void Test1()
         {
             var factory = SimpleFactory
-                .For<IProduct, ProductType>()
+                .For<ProductType, IProduct>()
                 .WithCache();
             IProduct product1 = factory.Create(ProductType.A);
             IProduct product2 = factory.Create(ProductType.B);
             IProduct product3 = factory.Create(ProductType.D);
 
-            var f = SimpleFactory.For<ClassBase, string>();
+            var f = SimpleFactory.For<string, ClassBase>();
             var p1 = f.Create(nameof(ProductOfClass1));
             var p2 = f.Create(nameof(ProductOfClass2));
         }
@@ -67,7 +67,7 @@ namespace SimpleFactoryGenerator.Tests
         D,
     }
 
-    public class ProductAttribute : ProductAttribute<IProduct, ProductType>
+    public class ProductAttribute : ProductAttribute<ProductType, IProduct>
     {
         public ProductAttribute(ProductType key) : base(key)
         {
