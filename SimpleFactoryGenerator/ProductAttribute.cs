@@ -9,3 +9,10 @@ public class ProductAttribute<TKey, TProduct> : Attribute where TProduct : class
     {
     }
 }
+
+[AttributeUsage(AttributeTargets.Class, AllowMultiple = true, Inherited = false)]
+public class ProductAttribute<TKey, TProduct, TCreator> : Attribute
+    where TProduct : class
+    where TCreator : ICreator<TKey, TProduct>, new()
+{
+}

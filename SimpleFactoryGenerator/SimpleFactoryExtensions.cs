@@ -16,10 +16,10 @@ public static class SimpleFactoryExtensions
         return factory.Keys.Any(item => EqualityComparer<TKey>.Default.Equals(key, item));
     }
 
-    public static bool TryCreate<TKey, TProduct>(this ISimpleFactory<TKey, TProduct> factory, TKey key, out TProduct result) where TProduct : class
+    public static bool TryCreate<TKey, TProduct>(this ISimpleFactory<TKey, TProduct> factory, TKey key, out TProduct product) where TProduct : class
     {
         bool contains = factory.Contains(key);
-        result = contains ? factory.Create(key) : null!;
+        product = contains ? factory.Create(key) : default!;
         return contains;
     }
 
@@ -28,15 +28,15 @@ public static class SimpleFactoryExtensions
         return factory.Keys.Select(factory.Create);
     }
 
-    private class CachedSimpleFactory<TKey, TProduct> : ISimpleFactory<TKey, TProduct> where TProduct : class
+    private sealed class CachedSimpleFactory<TKey, TProduct> : ISimpleFactory<TKey, TProduct> where TProduct : class
     {
         private readonly ConcurrentDictionary<TKey, TProduct> _cache = new();
-        private readonly ISimpleFactory<TKey, TProduct> _source;
+        private readonly ISimpleFactory<TKey, TProduct> _factory;
 
-        public CachedSimpleFactory(ISimpleFactory<TKey, TProduct> source) => _source = source;
+        public CachedSimpleFactory(ISimpleFactory<TKey, TProduct> factory) => _factory = factory;
 
-        public IReadOnlyCollection<TKey> Keys => _source.Keys;
+        public IReadOnlyCollection<TKey> Keys => _factory.Keys;
 
-        public TProduct Create(TKey feed) => _cache.GetOrAdd(feed, _source.Create);
+        public TProduct Create(TKey feed) => _cache.GetOrAdd(feed, _factory.Create);
     }
 }
