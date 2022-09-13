@@ -7,209 +7,208 @@ using Microsoft.CodeAnalysis.Text;
 using System.Text;
 using static SimpleFactoryGenerator.SourceGenerator.DiagnosticDescriptors;
 
-namespace SimpleFactoryGenerator.SourceGenerator
+namespace SimpleFactoryGenerator.SourceGenerator;
+
+[Generator]
+public class Generator : ISourceGenerator
 {
-    [Generator]
-    public class Generator : ISourceGenerator
+    public void Execute(GeneratorExecutionContext context)
     {
-        public void Execute(GeneratorExecutionContext context)
+        //System.Diagnostics.Debugger.Launch();
+
+        if (context.SyntaxReceiver is not SyntaxReceiver receiver)
         {
-            //System.Diagnostics.Debugger.Launch();
+            return;
+        }
 
-            if (context.SyntaxReceiver is not SyntaxReceiver receiver)
+        Compilation compilation = context.Compilation;
+
+        INamedTypeSymbol? attributeSymbol = compilation
+            .GetTypeByMetadataName("SimpleFactoryGenerator.ProductAttribute`2")?
+            .ConstructUnboundGenericType();
+        if (attributeSymbol is null)
+        {
+            return;
+        }
+
+        var productClasses = receiver.CandidateClasses
+            .GroupBy(@class => @class.SyntaxTree)
+            .SelectMany(group =>
             {
-                return;
+                SemanticModel model = compilation.GetSemanticModel(group.Key);
+                return group
+                    .Select(@class => model.GetDeclaredSymbol(@class))
+                    .OfType<INamedTypeSymbol>()
+                    .Select(@class => (
+                        @class,
+                        attributes: @class.GetAttributes(attributeSymbol).ToList()))
+                    .Where(item => item.attributes.Any());
+            })
+            .ToList();
+
+        if (!productClasses.Any())
+        {
+            return;
+        }
+
+        var invalidClasses = productClasses.Select(item => item.@class).FilterNoParameterlessCtorClasses().ToList();
+        if (invalidClasses.Any())
+        {
+            foreach (var location in invalidClasses.SelectMany(item => item.Locations))
+            {
+                context.ReportDiagnostic(Diagnostic.Create(ParameterlessConstructor, location));
             }
 
-            Compilation compilation = context.Compilation;
+            return;
+        }
 
-            INamedTypeSymbol? attributeSymbol = compilation
-                .GetTypeByMetadataName("SimpleFactoryGenerator.ProductAttribute`2")?
-                .ConstructUnboundGenericType();
-            if (attributeSymbol is null)
+        invalidClasses = productClasses.Select(item => item.@class).Where(item => item.TypeParameters.Any()).ToList();
+        if (invalidClasses.Any())
+        {
+            foreach (var location in invalidClasses.SelectMany(item => item.Locations))
             {
-                return;
+                context.ReportDiagnostic(Diagnostic.Create(NoGenericParameters, location));
             }
 
-            var productClasses = receiver.CandidateClasses
-                .GroupBy(@class => @class.SyntaxTree)
-                .SelectMany(group =>
-                {
-                    SemanticModel model = compilation.GetSemanticModel(group.Key);
-                    return group
-                        .Select(@class => model.GetDeclaredSymbol(@class))
-                        .OfType<INamedTypeSymbol>()
-                        .Select(@class => (
-                            @class,
-                            attributes: @class.GetAttributes(attributeSymbol).ToList()))
-                        .Where(item => item.attributes.Any());
-                })
+            return;
+        }
+
+        var groups = productClasses
+            .SelectMany(info => info.attributes
+                .Select(attribute => (
+                    info.@class,
+                    attribute,
+                    target: GetTargetSymbolFromGeneric(attribute.type))))
+            .GroupBy(item => item.target)
+            .ToList();
+
+        var infos = new List<FactoryInfo>();
+        foreach (var group in groups)
+        {
+            var groupList = group.ToList();
+            var target = group.Key;
+
+            var keyTypes = groupList
+                .Select(item => GetKeyDeclaration(item.attribute))
+                .Distinct()
                 .ToList();
 
-            if (!productClasses.Any())
+            if (keyTypes.Count > 1)
             {
-                return;
-            }
-
-            var invalidClasses = productClasses.Select(item => item.@class).FilterNoParameterlessCtorClasses().ToList();
-            if (invalidClasses.Any())
-            {
-                foreach (var location in invalidClasses.SelectMany(item => item.Locations))
+                var locations = groupList.SelectMany(item => item.@class.Locations);
+                foreach (var location in locations)
                 {
-                    context.ReportDiagnostic(Diagnostic.Create(ParameterlessConstructor, location));
+                    context.ReportDiagnostic(Diagnostic.Create(TheSameKeyType, location));
                 }
 
                 return;
             }
 
-            invalidClasses = productClasses.Select(item => item.@class).Where(item => item.TypeParameters.Any()).ToList();
-            if (invalidClasses.Any())
-            {
-                foreach (var location in invalidClasses.SelectMany(item => item.Locations))
-                {
-                    context.ReportDiagnostic(Diagnostic.Create(NoGenericParameters, location));
-                }
-
-                return;
-            }
-
-            var groups = productClasses
-                .SelectMany(info => info.attributes
-                    .Select(attribute => (
-                        info.@class,
-                        attribute,
-                        target: GetTargetSymbolFromGeneric(attribute.type))))
-                .GroupBy(item => item.target)
+            invalidClasses = groupList
+                .Select(item => item.@class)
+                .Where(item => target.TypeKind is TypeKind.Interface
+                    // Inherited from interface
+                    ? !item.AllInterfaces.Any(@interface => @interface.Equals(target, SymbolEqualityComparer.Default))
+                    // Inherited from class
+                    : !item.GetSelfAndBaseTypes().Skip(1).Any(@class => !@class.Equals(target, SymbolEqualityComparer.Default)))
                 .ToList();
-
-            var infos = new List<FactoryInfo>();
-            foreach (var group in groups)
+            if (invalidClasses.Any())
             {
-                var groupList = group.ToList();
-                var target = group.Key;
-
-                var keyTypes = groupList
-                    .Select(item => GetKeyDeclaration(item.attribute))
-                    .Distinct()
-                    .ToList();
-
-                if (keyTypes.Count > 1)
+                foreach (var invalidClass in invalidClasses)
                 {
-                    var locations = groupList.SelectMany(item => item.@class.Locations);
-                    foreach (var location in locations)
+                    foreach (var location in invalidClass.Locations)
                     {
-                        context.ReportDiagnostic(Diagnostic.Create(TheSameKeyType, location));
+                        context.ReportDiagnostic(Diagnostic.Create(ImplementTargetInterface, location, target.Name, invalidClass.Name));
                     }
-
-                    return;
                 }
 
-                invalidClasses = groupList
-                    .Select(item => item.@class)
-                    .Where(item => target.TypeKind is TypeKind.Interface
-                        // Inherited from interface
-                        ? !item.AllInterfaces.Any(@interface => @interface.Equals(target, SymbolEqualityComparer.Default))
-                        // Inherited from class
-                        : !item.GetSelfAndBaseTypes().Skip(1).Any(@class => !@class.Equals(target, SymbolEqualityComparer.Default)))
-                    .ToList();
-                if (invalidClasses.Any())
-                {
-                    foreach (var invalidClass in invalidClasses)
-                    {
-                        foreach (var location in invalidClass.Locations)
-                        {
-                            context.ReportDiagnostic(Diagnostic.Create(ImplementTargetInterface, location, target.Name, invalidClass.Name));
-                        }
-                    }
-
-                    return;
-                }
-
-                invalidClasses = groupList
-                    .Select(item => item.@class)
-                    .Where(item => !item.ContainingAssembly.Equals(target.ContainingAssembly, SymbolEqualityComparer.Default))
-                    .ToList();
-                if (invalidClasses.Any())
-                {
-                    foreach (var invalidClass in invalidClasses)
-                    {
-                        foreach (var location in invalidClass.Locations)
-                        {
-                            context.ReportDiagnostic(Diagnostic.Create(InTheSameAssembly, location, invalidClass.Name, target.Name));
-                        }
-                    }
-
-                    return;
-                }
-
-                var labelToClasses = groupList.Select(item =>
-                {
-                    bool isPrivate = item.@class.DeclaredAccessibility is Accessibility.Private;
-                    return new ProductInfo
-                    {
-                        Label = GetLabel(item.attribute),
-                        IsPrivate = isPrivate,
-                        ProductClassDeclaration = isPrivate
-                            ? $"{item.@class.ContainingType.ToDisplayString()}+{item.@class.Name}"
-                            : item.@class.ToDeclaration(),
-                    };
-                });
-
-                infos.Add(new FactoryInfo
-                {
-                    Namespace = target.ContainingNamespace.ToDisplayString(),
-                    TargetInterfaceName = target.Name,
-                    TargetInterfaceDeclaration = target.ToDeclaration(),
-                    KeyType = keyTypes.Single(),
-                    Products = labelToClasses.ToList(),
-                });
+                return;
             }
 
-            string source = SimpleFactory.Generate(infos);
-            context.AddSource($"SimpleFactory.g.cs", SourceText.From(source, Encoding.UTF8));
-        }
-
-        public void Initialize(GeneratorInitializationContext context)
-        {
-            context.RegisterForSyntaxNotifications(() => new SyntaxReceiver());
-        }
-
-        private static ITypeSymbol GetTargetSymbolFromGeneric(INamedTypeSymbol symbol)
-        {
-            const int targetTypeIndex = 1;
-
-            return symbol.TypeArguments[targetTypeIndex];
-        }
-
-        private static string GetKeyDeclaration((IReadOnlyList<TypedConstant> ctorArgs, INamedTypeSymbol type) info)
-        {
-            const int keyTypeIndex = 0;
-
-            var symbol = info.type.IsGenericType
-                ? info.type.TypeArguments[keyTypeIndex]
-                : (ITypeSymbol)info.ctorArgs[keyTypeIndex].Value!;
-
-            return symbol.ToDeclaration();
-        }
-
-        private static string GetLabel((IReadOnlyList<TypedConstant> ctorArgs, INamedTypeSymbol type) info)
-        {
-            const int genericKeyIndex = 0;
-            const int keyIndex = 2;
-
-            return info.ctorArgs[info.type.IsGenericType ? genericKeyIndex : keyIndex].ToDisplayValue();
-        }
-
-        private class SyntaxReceiver : ISyntaxReceiver
-        {
-            public List<ClassDeclarationSyntax> CandidateClasses { get; } = new();
-
-            public void OnVisitSyntaxNode(SyntaxNode syntaxNode)
+            invalidClasses = groupList
+                .Select(item => item.@class)
+                .Where(item => !item.ContainingAssembly.Equals(target.ContainingAssembly, SymbolEqualityComparer.Default))
+                .ToList();
+            if (invalidClasses.Any())
             {
-                if (syntaxNode is ClassDeclarationSyntax { AttributeLists.Count: > 0 } interfaceDeclarationSyntax)
+                foreach (var invalidClass in invalidClasses)
                 {
-                    CandidateClasses.Add(interfaceDeclarationSyntax);
+                    foreach (var location in invalidClass.Locations)
+                    {
+                        context.ReportDiagnostic(Diagnostic.Create(InTheSameAssembly, location, invalidClass.Name, target.Name));
+                    }
                 }
+
+                return;
+            }
+
+            var labelToClasses = groupList.Select(item =>
+            {
+                bool isPrivate = item.@class.DeclaredAccessibility is Accessibility.Private;
+                return new ProductInfo
+                {
+                    Label = GetLabel(item.attribute),
+                    IsPrivate = isPrivate,
+                    ProductClassDeclaration = isPrivate
+                        ? $"{item.@class.ContainingType.ToDisplayString()}+{item.@class.Name}"
+                        : item.@class.ToDeclaration(),
+                };
+            });
+
+            infos.Add(new FactoryInfo
+            {
+                Namespace = target.ContainingNamespace.ToDisplayString(),
+                TargetInterfaceName = target.Name,
+                TargetInterfaceDeclaration = target.ToDeclaration(),
+                KeyType = keyTypes.Single(),
+                Products = labelToClasses.ToList(),
+            });
+        }
+
+        string source = SimpleFactory.Generate(infos);
+        context.AddSource($"SimpleFactory.g.cs", SourceText.From(source, Encoding.UTF8));
+    }
+
+    public void Initialize(GeneratorInitializationContext context)
+    {
+        context.RegisterForSyntaxNotifications(() => new SyntaxReceiver());
+    }
+
+    private static ITypeSymbol GetTargetSymbolFromGeneric(INamedTypeSymbol symbol)
+    {
+        const int targetTypeIndex = 1;
+
+        return symbol.TypeArguments[targetTypeIndex];
+    }
+
+    private static string GetKeyDeclaration((IReadOnlyList<TypedConstant> ctorArgs, INamedTypeSymbol type) info)
+    {
+        const int keyTypeIndex = 0;
+
+        var symbol = info.type.IsGenericType
+            ? info.type.TypeArguments[keyTypeIndex]
+            : (ITypeSymbol)info.ctorArgs[keyTypeIndex].Value!;
+
+        return symbol.ToDeclaration();
+    }
+
+    private static string GetLabel((IReadOnlyList<TypedConstant> ctorArgs, INamedTypeSymbol type) info)
+    {
+        const int genericKeyIndex = 0;
+        const int keyIndex = 2;
+
+        return info.ctorArgs[info.type.IsGenericType ? genericKeyIndex : keyIndex].ToDisplayValue();
+    }
+
+    private class SyntaxReceiver : ISyntaxReceiver
+    {
+        public List<ClassDeclarationSyntax> CandidateClasses { get; } = new();
+
+        public void OnVisitSyntaxNode(SyntaxNode syntaxNode)
+        {
+            if (syntaxNode is ClassDeclarationSyntax { AttributeLists.Count: > 0 } interfaceDeclarationSyntax)
+            {
+                CandidateClasses.Add(interfaceDeclarationSyntax);
             }
         }
     }

@@ -1,13 +1,13 @@
 using System.Collections.Generic;
 using static SimpleFactoryGenerator.SourceGenerator.TemplateExtensions;
 
-namespace SimpleFactoryGenerator.SourceGenerator
+namespace SimpleFactoryGenerator.SourceGenerator;
+
+internal static class SimpleFactory
 {
-    internal static class SimpleFactory
+    public static string Generate(IEnumerable<FactoryInfo> infos)
     {
-        public static string Generate(IEnumerable<FactoryInfo> infos)
-        {
-            return $@"
+        return $@"
 namespace SimpleFactoryGenerator.Implementation
 {{
     [global::System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
@@ -49,6 +49,5 @@ namespace SimpleFactoryGenerator.Implementation
     }}
 }}
 ".FormatCode();
-        }
     }
 }
