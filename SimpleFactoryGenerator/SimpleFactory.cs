@@ -8,7 +8,7 @@ public static class SimpleFactory
 
         static string GetTypeName(string @namespace, string targetName)
         {
-            return $"SimpleFactoryGenerator.Implementation.Generated+{@namespace}_{targetName}SimpleFactory";
+            return $"SimpleFactoryGenerator.Implementation.GeneratedSimpleFactory+{@namespace}_{targetName}";
         }
     }
 }

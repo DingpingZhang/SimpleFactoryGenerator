@@ -12,5 +12,5 @@ public class ProductInfo
      */
     public bool IsPrivate { get; set; }
 
-    public string ProductClassDeclaration { get; set; } = null!;
+    public string ClassDeclaration { get; set; } = null!;
 }

@@ -1,4 +1,4 @@
-﻿namespace SimpleFactoryGenerator;
+namespace SimpleFactoryGenerator;
 
 public static class Factory
 {
@@ -8,7 +8,7 @@ public static class Factory
 
         static string GetTypeName(string @namespace, string targetName)
         {
-            return $"SimpleFactoryGenerator.Implementation.Generated+{@namespace}_{targetName}Factory";
+            return $"SimpleFactoryGenerator.Implementation.GeneratedFactory+{@namespace}_{targetName}";
         }
     }
 }

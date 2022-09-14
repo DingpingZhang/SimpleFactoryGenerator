@@ -23,10 +23,14 @@ public class Generator : ISourceGenerator
 
         Compilation compilation = context.Compilation;
 
-        INamedTypeSymbol? attributeSymbol = compilation
+        INamedTypeSymbol? simpleProductSymbol = compilation
             .GetTypeByMetadataName("SimpleFactoryGenerator.ProductAttribute`2")?
             .ConstructUnboundGenericType();
-        if (attributeSymbol is null)
+        INamedTypeSymbol? productSymbol = compilation
+            .GetTypeByMetadataName("SimpleFactoryGenerator.ProductAttribute`3")?
+            .ConstructUnboundGenericType();
+
+        if (simpleProductSymbol is null || productSymbol is null)
         {
             return;
         }
@@ -41,7 +45,7 @@ public class Generator : ISourceGenerator
                     .OfType<INamedTypeSymbol>()
                     .Select(@class => (
                         @class,
-                        attributes: @class.GetAttributes(attributeSymbol).ToList()))
+                        attributes: @class.GetAttributes(simpleProductSymbol, productSymbol).ToList()))
                     .Where(item => item.attributes.Any());
             })
             .ToList();
@@ -51,7 +55,13 @@ public class Generator : ISourceGenerator
             return;
         }
 
-        var invalidClasses = productClasses.Select(item => item.@class).FilterNoParameterlessCtorClasses().ToList();
+        var invalidClasses = productClasses
+            // Only simple-factory-product require the parameterless constructor, while factory-method-product are created by the Creator,
+            // so this check is not required.
+            .Where(item => item.attributes.Any(attribute => attribute.type.EqualAttribute(simpleProductSymbol)))
+            .Select(item => item.@class)
+            .FilterNoParameterlessCtorClasses()
+            .ToList();
         if (invalidClasses.Any())
         {
             foreach (var location in invalidClasses.SelectMany(item => item.Locations))
@@ -62,7 +72,11 @@ public class Generator : ISourceGenerator
             return;
         }
 
-        invalidClasses = productClasses.Select(item => item.@class).Where(item => item.TypeParameters.Any()).ToList();
+        invalidClasses = productClasses
+            .Where(item => item.attributes.Any(attribute => attribute.type.EqualAttribute(simpleProductSymbol)))
+            .Select(item => item.@class)
+            .Where(item => item.TypeParameters.Any())
+            .ToList();
         if (invalidClasses.Any())
         {
             foreach (var location in invalidClasses.SelectMany(item => item.Locations))
@@ -78,18 +92,19 @@ public class Generator : ISourceGenerator
                 .Select(attribute => (
                     info.@class,
                     attribute,
-                    target: GetTargetSymbolFromGeneric(attribute.type))))
+                    target: GetTargetType(attribute.type))))
             .GroupBy(item => item.target)
             .ToList();
 
-        var infos = new List<FactoryInfo>();
+        var productInfos = new List<FactoryInfo<ProductInfo>>();
+        var creatorInfos = new List<FactoryInfo<CreatorInfo>>();
         foreach (var group in groups)
         {
             var groupList = group.ToList();
             var target = group.Key;
 
             var keyTypes = groupList
-                .Select(item => GetKeyDeclaration(item.attribute))
+                .Select(item => GetKeyType(item.attribute.type).ToDeclaration())
                 .Distinct()
                 .ToList();
 
@@ -142,31 +157,72 @@ public class Generator : ISourceGenerator
                 return;
             }
 
-            var labelToClasses = groupList.Select(item =>
-            {
-                bool isPrivate = item.@class.DeclaredAccessibility is Accessibility.Private;
-                return new ProductInfo
+            var products = groupList
+                .Where(item => simpleProductSymbol.EqualAttribute(item.attribute.type))
+                .Select(item =>
                 {
-                    Label = GetLabel(item.attribute),
-                    IsPrivate = isPrivate,
-                    ProductClassDeclaration = isPrivate
-                        ? $"{item.@class.ContainingType.ToDisplayString()}+{item.@class.Name}"
-                        : item.@class.ToDeclaration(),
-                };
-            });
-
-            infos.Add(new FactoryInfo
+                    bool isPrivate = item.@class.DeclaredAccessibility is Accessibility.Private;
+                    return new ProductInfo
+                    {
+                        Label = GetLabel(item.attribute.ctorArgs),
+                        IsPrivate = isPrivate,
+                        ClassDeclaration = isPrivate
+                            ? $"{item.@class.ContainingType.ToDisplayString()}+{item.@class.Name}"
+                            : item.@class.ToDeclaration(),
+                    };
+                })
+                .ToList();
+            if (products.Any())
             {
-                Namespace = target.ContainingNamespace.ToDisplayString(),
-                TargetInterfaceName = target.Name,
-                TargetInterfaceDeclaration = target.ToDeclaration(),
-                KeyType = keyTypes.Single(),
-                Products = labelToClasses.ToList(),
-            });
+                productInfos.Add(new FactoryInfo<ProductInfo>
+                {
+                    Namespace = target.ContainingNamespace.ToDisplayString(),
+                    TargetInterfaceName = target.Name,
+                    TargetInterfaceDeclaration = target.ToDeclaration(),
+                    KeyType = keyTypes.Single(),
+                    Items = products.ToList(),
+                });
+            }
+
+            var creators = groupList
+                .Where(item => productSymbol.EqualAttribute(item.attribute.type))
+                .Select(item =>
+                {
+                    ITypeSymbol creatorType = GetCreatorType(item.attribute.type);
+                    bool isPrivate = creatorType.DeclaredAccessibility is Accessibility.Private;
+                    return new CreatorInfo
+                    {
+                        IsPrivate = isPrivate,
+                        ClassDeclaration = isPrivate
+                            ? $"{creatorType.ContainingType.ToDisplayString()}+{creatorType.Name}"
+                            : creatorType.ToDeclaration(),
+                    };
+                })
+                .ToList();
+            if (creators.Any())
+            {
+                creatorInfos.Add(new FactoryInfo<CreatorInfo>
+                {
+                    Namespace = target.ContainingNamespace.ToDisplayString(),
+                    TargetInterfaceName = target.Name,
+                    TargetInterfaceDeclaration = target.ToDeclaration(),
+                    KeyType = keyTypes.Single(),
+                    Items = creators.ToList(),
+                });
+            }
         }
 
-        string source = SimpleFactory.Generate(infos);
-        context.AddSource($"SimpleFactory.g.cs", SourceText.From(source, Encoding.UTF8));
+        if (productInfos.Any())
+        {
+            string simpleFactorySource = SimpleFactory.Generate(productInfos);
+            context.AddSource($"SimpleFactory.g.cs", SourceText.From(simpleFactorySource, Encoding.UTF8));
+        }
+
+        if (creatorInfos.Any())
+        {
+            string factoryMethodSource = Factory.Generate(creatorInfos);
+            context.AddSource($"Factory.g.cs", SourceText.From(factoryMethodSource, Encoding.UTF8));
+        }
     }
 
     public void Initialize(GeneratorInitializationContext context)
@@ -174,30 +230,35 @@ public class Generator : ISourceGenerator
         context.RegisterForSyntaxNotifications(() => new SyntaxReceiver());
     }
 
-    private static ITypeSymbol GetTargetSymbolFromGeneric(INamedTypeSymbol symbol)
-    {
-        const int targetTypeIndex = 1;
-
-        return symbol.TypeArguments[targetTypeIndex];
-    }
-
-    private static string GetKeyDeclaration((IReadOnlyList<TypedConstant> ctorArgs, INamedTypeSymbol type) info)
+    private static ITypeSymbol GetKeyType(INamedTypeSymbol attribute)
     {
         const int keyTypeIndex = 0;
 
-        var symbol = info.type.IsGenericType
-            ? info.type.TypeArguments[keyTypeIndex]
-            : (ITypeSymbol)info.ctorArgs[keyTypeIndex].Value!;
-
-        return symbol.ToDeclaration();
+        // e.g. Product<*TKey*, TProduct, TCreator> or Product<*TKey*, TProduct>.
+        return attribute.TypeArguments[keyTypeIndex];
     }
 
-    private static string GetLabel((IReadOnlyList<TypedConstant> ctorArgs, INamedTypeSymbol type) info)
+    private static ITypeSymbol GetTargetType(INamedTypeSymbol symbol)
     {
-        const int genericKeyIndex = 0;
-        const int keyIndex = 2;
+        const int targetTypeIndex = 1;
 
-        return info.ctorArgs[info.type.IsGenericType ? genericKeyIndex : keyIndex].ToDisplayValue();
+        // e.g. Product<TKey, *TProduct*, TCreator> or Product<TKey, *TProduct*>.
+        return symbol.TypeArguments[targetTypeIndex];
+    }
+
+    private static ITypeSymbol GetCreatorType(INamedTypeSymbol symbol)
+    {
+        const int creatorTypeIndex = 2;
+
+        // e.g. Product<TKey, TProduct, *TCreator*>.
+        return symbol.TypeArguments[creatorTypeIndex];
+    }
+
+    private static string GetLabel(IReadOnlyList<TypedConstant> ctorArgs)
+    {
+        const int labelIndex = 0;
+
+        return ctorArgs[labelIndex].ToDisplayValue();
     }
 
     private class SyntaxReceiver : ISyntaxReceiver

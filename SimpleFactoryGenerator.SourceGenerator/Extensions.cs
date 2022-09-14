@@ -50,16 +50,16 @@ internal static class Extensions
         }
     }
 
-    public static IEnumerable<(IReadOnlyList<TypedConstant> ctorArgs, INamedTypeSymbol type)> GetAttributes(this INamedTypeSymbol symbol, INamedTypeSymbol attributeSymbol)
+    public static IEnumerable<(INamedTypeSymbol type, IReadOnlyList<TypedConstant> ctorArgs)> GetAttributes(this INamedTypeSymbol symbol, params INamedTypeSymbol[] attributeSymbols)
     {
         return from attribute in symbol.GetAttributes()
                let type = attribute.AttributeClass
                let productAttribute = type.GetSelfAndBaseTypes()
                    .OfType<INamedTypeSymbol>()
-                   .FirstOrDefault(attributeSymbol.EqualAttribute)
-               where productAttribute != null
+                   .FirstOrDefault(symbol => attributeSymbols.Any(attribute => attribute.EqualAttribute(symbol)))
+               where productAttribute is not null
                let ctorArgs = (IReadOnlyList<TypedConstant>)attribute.ConstructorArguments
-               select (ctorArgs, productAttribute);
+               select (productAttribute, ctorArgs);
     }
 
     public static bool EqualAttribute(this INamedTypeSymbol expected, INamedTypeSymbol? actual)

@@ -2,7 +2,7 @@ using System.Collections.Generic;
 
 namespace SimpleFactoryGenerator.SourceGenerator;
 
-internal class FactoryInfo
+internal class FactoryInfo<T>
 {
     public string Namespace { get; set; } = null!;
 
@@ -12,5 +12,5 @@ internal class FactoryInfo
 
     public string KeyType { get; set; } = null!;
 
-    public IReadOnlyCollection<ProductInfo> Products { get; set; } = null!;
+    public IReadOnlyCollection<T> Items { get; set; } = null!;
 }
