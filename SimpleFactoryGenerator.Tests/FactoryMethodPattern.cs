@@ -27,19 +27,18 @@ public class ProductKey
     public string Name { get; set; } = null!;
 }
 
-public class TestProductAttribute<TCreator> : ProductAttribute<ProductKey, IProduct, TCreator>
-    where TCreator : ICreator<ProductKey, IProduct>, new()
+public class TestCreatorAttribute : CreatorAttribute<ProductKey, IProduct>
 {
 
 }
 
-[TestProduct<Creator>]
 public class Product1 : IProduct
 {
     public Product1(string name)
     {
     }
 
+    [TestCreator]
     private sealed class Creator : ICreator<ProductKey, IProduct>
     {
         public bool CanCreate(ProductKey key) => key.Name is "name1" or "name2";
@@ -48,9 +47,9 @@ public class Product1 : IProduct
     }
 }
 
-[TestProduct<Creator>]
 public class Product2 : IProduct
 {
+    [TestCreator]
     private sealed class Creator : ICreator<ProductKey, IProduct>
     {
         public bool CanCreate(ProductKey key) => key.Name is "type";
@@ -59,9 +58,9 @@ public class Product2 : IProduct
     }
 }
 
-[TestProduct<Creator>]
 internal class Product3 : IProduct
 {
+    [TestCreator]
     internal sealed class Creator : ICreator<ProductKey, IProduct>
     {
         public bool CanCreate(ProductKey key) => string.IsNullOrEmpty(key.Name);

@@ -23,19 +23,21 @@ public class Generator : ISourceGenerator
 
         Compilation compilation = context.Compilation;
 
-        INamedTypeSymbol? simpleProductSymbol = compilation
+        INamedTypeSymbol? productSymbol = compilation
             .GetTypeByMetadataName("SimpleFactoryGenerator.ProductAttribute`2")?
             .ConstructUnboundGenericType();
-        INamedTypeSymbol? productSymbol = compilation
-            .GetTypeByMetadataName("SimpleFactoryGenerator.ProductAttribute`3")?
+        INamedTypeSymbol? creatorSymbol = compilation
+            .GetTypeByMetadataName("SimpleFactoryGenerator.CreatorAttribute`2")?
             .ConstructUnboundGenericType();
+        INamedTypeSymbol? creatorInterfaceSymbol = compilation
+            .GetTypeByMetadataName("SimpleFactoryGenerator.ICreator`2");
 
-        if (simpleProductSymbol is null || productSymbol is null)
+        if (productSymbol is null || creatorSymbol is null || creatorInterfaceSymbol is null)
         {
             return;
         }
 
-        var productClasses = receiver.CandidateClasses
+        var markedClasses = receiver.CandidateClasses
             .GroupBy(@class => @class.SyntaxTree)
             .SelectMany(group =>
             {
@@ -45,49 +47,28 @@ public class Generator : ISourceGenerator
                     .OfType<INamedTypeSymbol>()
                     .Select(@class => (
                         @class,
-                        attributes: @class.GetAttributes(simpleProductSymbol, productSymbol).ToList()))
+                        attributes: @class.GetAttributes(productSymbol, creatorSymbol).ToList()))
                     .Where(item => item.attributes.Any());
             })
             .ToList();
 
-        if (!productClasses.Any())
+        if (!markedClasses.Any())
         {
             return;
         }
 
-        var invalidClasses = productClasses
-            // Only simple-factory-product require the parameterless constructor, while factory-method-product are created by the Creator,
-            // so this check is not required.
-            .Where(item => item.attributes.Any(attribute => attribute.type.EqualAttribute(simpleProductSymbol)))
-            .Select(item => item.@class)
-            .FilterNoParameterlessCtorClasses()
-            .ToList();
-        if (invalidClasses.Any())
+        // Check: ParameterlessConstructor
+        if (!context.CheckParameterlessConstructor(markedClasses.Select(item => item.@class)))
         {
-            foreach (var location in invalidClasses.SelectMany(item => item.Locations))
-            {
-                context.ReportDiagnostic(Diagnostic.Create(ParameterlessConstructor, location));
-            }
-
             return;
         }
 
-        invalidClasses = productClasses
-            .Where(item => item.attributes.Any(attribute => attribute.type.EqualAttribute(simpleProductSymbol)))
-            .Select(item => item.@class)
-            .Where(item => item.TypeParameters.Any())
-            .ToList();
-        if (invalidClasses.Any())
+        if (!context.CheckNoGenericParameters(markedClasses.Select(item => item.@class)))
         {
-            foreach (var location in invalidClasses.SelectMany(item => item.Locations))
-            {
-                context.ReportDiagnostic(Diagnostic.Create(NoGenericParameters, location));
-            }
-
             return;
         }
 
-        var groups = productClasses
+        var groups = markedClasses
             .SelectMany(info => info.attributes
                 .Select(attribute => (
                     info.@class,
@@ -103,112 +84,68 @@ public class Generator : ISourceGenerator
             var groupList = group.ToList();
             var target = group.Key;
 
+            if (!context.CheckTheSameAssembly(target, groupList.Select(item => item.@class)))
+            {
+                return;
+            }
+
             var keyTypes = groupList
-                .Select(item => GetKeyType(item.attribute.type).ToDeclaration())
-                .Distinct()
-                .ToList();
-
-            if (keyTypes.Count > 1)
+                .Select(item => GetKeyType(item.attribute.type))
+                .Distinct(SymbolEqualityComparer.Default)
+                .ToArray();
+            if (!context.CheckTheSameKeyType(keyTypes.Length, groupList.Select(item => item.@class)))
             {
-                var locations = groupList.SelectMany(item => item.@class.Locations);
-                foreach (var location in locations)
-                {
-                    context.ReportDiagnostic(Diagnostic.Create(TheSameKeyType, location));
-                }
-
                 return;
             }
 
-            invalidClasses = groupList
-                .Select(item => item.@class)
-                .Where(item => target.TypeKind is TypeKind.Interface
-                    // Inherited from interface
-                    ? !item.AllInterfaces.Any(@interface => @interface.Equals(target, SymbolEqualityComparer.Default))
-                    // Inherited from class
-                    : !item.GetSelfAndBaseTypes().Skip(1).Any(@class => !@class.Equals(target, SymbolEqualityComparer.Default)))
-                .ToList();
-            if (invalidClasses.Any())
-            {
-                foreach (var invalidClass in invalidClasses)
-                {
-                    foreach (var location in invalidClass.Locations)
-                    {
-                        context.ReportDiagnostic(Diagnostic.Create(ImplementTargetInterface, location, target.Name, invalidClass.Name));
-                    }
-                }
-
-                return;
-            }
-
-            invalidClasses = groupList
-                .Select(item => item.@class)
-                .Where(item => !item.ContainingAssembly.Equals(target.ContainingAssembly, SymbolEqualityComparer.Default))
-                .ToList();
-            if (invalidClasses.Any())
-            {
-                foreach (var invalidClass in invalidClasses)
-                {
-                    foreach (var location in invalidClass.Locations)
-                    {
-                        context.ReportDiagnostic(Diagnostic.Create(InTheSameAssembly, location, invalidClass.Name, target.Name));
-                    }
-                }
-
-                return;
-            }
-
-            var products = groupList
-                .Where(item => simpleProductSymbol.EqualAttribute(item.attribute.type))
-                .Select(item =>
-                {
-                    bool isPrivate = item.@class.DeclaredAccessibility is Accessibility.Private;
-                    return new ProductInfo
-                    {
-                        Label = GetLabel(item.attribute.ctorArgs),
-                        IsPrivate = isPrivate,
-                        ClassDeclaration = isPrivate
-                            ? $"{item.@class.ContainingType.ToDisplayString()}+{item.@class.Name}"
-                            : item.@class.ToDeclaration(),
-                    };
-                })
-                .ToList();
-            if (products.Any())
-            {
-                productInfos.Add(new FactoryInfo<ProductInfo>
-                {
-                    Namespace = target.ContainingNamespace.ToDisplayString(),
-                    TargetInterfaceName = target.Name,
-                    TargetInterfaceDeclaration = target.ToDeclaration(),
-                    KeyType = keyTypes.Single(),
-                    Items = products.ToList(),
-                });
-            }
-
-            var creators = groupList
+            var productClasses = groupList
                 .Where(item => productSymbol.EqualAttribute(item.attribute.type))
-                .Select(item =>
-                {
-                    ITypeSymbol creatorType = GetCreatorType(item.attribute.type);
-                    bool isPrivate = creatorType.DeclaredAccessibility is Accessibility.Private;
-                    return new CreatorInfo
-                    {
-                        IsPrivate = isPrivate,
-                        ClassDeclaration = isPrivate
-                            ? $"{creatorType.ContainingType.ToDisplayString()}+{creatorType.Name}"
-                            : creatorType.ToDeclaration(),
-                    };
-                })
-                .ToList();
-            if (creators.Any())
+                .ToArray();
+            if (!context.CheckImplementTargetInterface(target, productClasses.Select(item => item.@class)))
             {
-                creatorInfos.Add(new FactoryInfo<CreatorInfo>
-                {
-                    Namespace = target.ContainingNamespace.ToDisplayString(),
-                    TargetInterfaceName = target.Name,
-                    TargetInterfaceDeclaration = target.ToDeclaration(),
-                    KeyType = keyTypes.Single(),
-                    Items = creators.ToList(),
-                });
+                return;
+            }
+
+            ISymbol keyType = keyTypes.Single()!;
+            var creatorClasses = groupList
+                .Where(item => creatorSymbol.EqualAttribute(item.attribute.type))
+                .ToArray();
+            var creatorInterface = creatorInterfaceSymbol.Construct((ITypeSymbol)keyType, target);
+            if (!context.CheckImplementCreatorInterface(creatorInterface, creatorClasses.Select(item => item.@class)))
+            {
+                return;
+            }
+
+            string keyTypeDeclaration = keyType.ToDeclaration();
+            if (productClasses.Any())
+            {
+                var products = productClasses
+                    .Select(item =>
+                    {
+                        return new ProductInfo
+                        {
+                            Label = GetLabel(item.attribute.ctorArgs),
+                            IsPrivate = IsPrivate(item.@class),
+                            ClassDeclaration = GetClassDeclaration(item.@class),
+                        };
+                    })
+                    .ToArray();
+                productInfos.Add(CreateFactoryInfo(target, keyTypeDeclaration, products));
+            }
+
+            if (creatorClasses.Any())
+            {
+                var creators = creatorClasses
+                    .Select(item =>
+                    {
+                        return new CreatorInfo
+                        {
+                            IsPrivate = IsPrivate(item.@class),
+                            ClassDeclaration = GetClassDeclaration(item.@class),
+                        };
+                    })
+                    .ToArray();
+                creatorInfos.Add(CreateFactoryInfo(target, keyTypeDeclaration, creators));
             }
         }
 
@@ -230,11 +167,35 @@ public class Generator : ISourceGenerator
         context.RegisterForSyntaxNotifications(() => new SyntaxReceiver());
     }
 
+    private static FactoryInfo<T> CreateFactoryInfo<T>(ITypeSymbol target, string keyType, IReadOnlyCollection<T> items)
+    {
+        return new FactoryInfo<T>
+        {
+            Namespace = target.ContainingNamespace.ToDisplayString(),
+            TargetInterfaceName = target.Name,
+            TargetInterfaceDeclaration = target.ToDeclaration(),
+            KeyType = keyType,
+            Items = items,
+        };
+    }
+
+    private static bool IsPrivate(ITypeSymbol symbol)
+    {
+        return symbol.DeclaredAccessibility is Accessibility.Private;
+    }
+
+    private static string GetClassDeclaration(ITypeSymbol symbol)
+    {
+        return IsPrivate(symbol)
+            ? $"{symbol.ContainingType.ToDisplayString()}+{symbol.Name}"
+            : symbol.ToDeclaration();
+    }
+
     private static ITypeSymbol GetKeyType(INamedTypeSymbol attribute)
     {
         const int keyTypeIndex = 0;
 
-        // e.g. Product<*TKey*, TProduct, TCreator> or Product<*TKey*, TProduct>.
+        // e.g. Creator<*TKey*, TProduct> or Product<*TKey*, TProduct>.
         return attribute.TypeArguments[keyTypeIndex];
     }
 
@@ -242,16 +203,8 @@ public class Generator : ISourceGenerator
     {
         const int targetTypeIndex = 1;
 
-        // e.g. Product<TKey, *TProduct*, TCreator> or Product<TKey, *TProduct*>.
+        // e.g. Creator<TKey, *TProduct*> or Product<TKey, *TProduct*>.
         return symbol.TypeArguments[targetTypeIndex];
-    }
-
-    private static ITypeSymbol GetCreatorType(INamedTypeSymbol symbol)
-    {
-        const int creatorTypeIndex = 2;
-
-        // e.g. Product<TKey, TProduct, *TCreator*>.
-        return symbol.TypeArguments[creatorTypeIndex];
     }
 
     private static string GetLabel(IReadOnlyList<TypedConstant> ctorArgs)
