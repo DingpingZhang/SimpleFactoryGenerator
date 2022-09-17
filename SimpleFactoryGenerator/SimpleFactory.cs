@@ -1,28 +1,24 @@
-using System;
-using System.Collections.Concurrent;
+namespace SimpleFactoryGenerator;
 
-namespace SimpleFactoryGenerator
+/// <summary>
+/// Represents an entry point to get a simple-factory (simple-factory pattern).
+/// </summary>
+public static class SimpleFactory
 {
-    public static class SimpleFactory
+    /// <summary>
+    /// Gets a simple-factory by the specified <typeparamref name="TKey"/> and <typeparamref name="TProduct"/> type,
+    /// whose instances will be cached.
+    /// </summary>
+    /// <typeparam name="TKey">The type of the feed used to produce products.</typeparam>
+    /// <typeparam name="TProduct">The type of the product.</typeparam>
+    /// <returns>Returns a simple-factory used to create the <typeparamref name="TProduct"/> instance by the specified <typeparamref name="TKey"/>.</returns>
+    public static ISimpleFactory<TKey, TProduct> For<TKey, TProduct>() where TProduct : class
     {
-        private static readonly ConcurrentDictionary<string, object> Cache = new();
+        return (ISimpleFactory<TKey, TProduct>)GeneratedType.Factory<TProduct>(GetTypeName);
 
-        public static ISimpleFactory<TTarget, TKey> For<TTarget, TKey>() where TTarget : class
+        static string GetTypeName(string @namespace, string targetName)
         {
-            Type targetType = typeof(TTarget);
-            string @namespace = targetType.Namespace.Replace(".", "_");
-            string targetName = targetType.Name;
-            string typeName = $"SimpleFactoryGenerator.Implementation.Generated+{@namespace}_{targetName}Factory";
-            string fullTypeName = $"{typeName}, {targetType.Assembly.FullName}";
-
-            object factory = Cache.GetOrAdd(fullTypeName, CreateFactory);
-            return (ISimpleFactory<TTarget, TKey>)factory;
-        }
-
-        private static object CreateFactory(string fullTypeName)
-        {
-            Type type = Type.GetType(fullTypeName);
-            return Activator.CreateInstance(type);
+            return $"SimpleFactoryGenerator.Implementation.GeneratedSimpleFactory+{@namespace}_{targetName}";
         }
     }
 }

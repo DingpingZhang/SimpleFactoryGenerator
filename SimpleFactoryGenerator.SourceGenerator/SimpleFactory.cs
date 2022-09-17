@@ -1,27 +1,27 @@
 using System.Collections.Generic;
 using static SimpleFactoryGenerator.SourceGenerator.TemplateExtensions;
 
-namespace SimpleFactoryGenerator.SourceGenerator
+namespace SimpleFactoryGenerator.SourceGenerator;
+
+internal static class SimpleFactory
 {
-    internal static class SimpleFactory
+    public static string Generate(IEnumerable<FactoryInfo<ProductInfo>> infos)
     {
-        public static string Generate(IEnumerable<FactoryInfo> infos)
-        {
-            return $@"
+        return $@"
 namespace SimpleFactoryGenerator.Implementation
 {{
     [global::System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
     [global::System.Diagnostics.DebuggerNonUserCode]
     [global::System.Reflection.Obfuscation(Exclude = true)]
     [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
-    internal static class Generated
+    internal static class GeneratedSimpleFactory
     {{
 {infos.For(info => $@"
-        private class {info.Namespace.Replace(".", "_")}_{info.TargetInterfaceName}Factory : ISimpleFactory<{info.TargetInterfaceDeclaration}, {info.KeyType}>
+        private class {info.Namespace.Replace(".", "_")}_{info.TargetInterfaceName} : ISimpleFactory<{info.KeyType}, {info.TargetInterfaceDeclaration}>
         {{
             public System.Collections.Generic.IReadOnlyCollection<{info.KeyType}> Keys {{ get; }} = new []
             {{
-{info.Products.For(info => $@"
+{info.Items.For(info => $@"
                 {info.Label},
 ")}
             }};
@@ -30,13 +30,13 @@ namespace SimpleFactoryGenerator.Implementation
             {{
                 switch(key)
                 {{
-{info.Products.For(product => $@"
+{info.Items.For(product => $@"
 {Text(product.IsPrivate ? $@"
                     case {product.Label}:
-                        return ({info.TargetInterfaceDeclaration})System.Activator.CreateInstance(System.Type.GetType(""{product.ProductClassDeclaration}""));
+                        return ({info.TargetInterfaceDeclaration})System.Activator.CreateInstance(System.Type.GetType(""{product.ClassDeclaration}""));
 " : $@"
                     case {product.Label}:
-                        return new {product.ProductClassDeclaration}();
+                        return new {product.ClassDeclaration}();
 ")}
 ")}
                     default:
@@ -49,6 +49,5 @@ namespace SimpleFactoryGenerator.Implementation
     }}
 }}
 ".FormatCode();
-        }
     }
 }

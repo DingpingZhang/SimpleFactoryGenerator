@@ -2,42 +2,75 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace SimpleFactoryGenerator
+namespace SimpleFactoryGenerator;
+
+/// <summary>
+/// An extension-method collection of the <see cref="ISimpleFactory{TKey, TProduct}"/>.
+/// </summary>
+public static class SimpleFactoryExtensions
 {
-    public static class SimpleFactoryExtensions
+    /// <summary>
+    /// Gets a wrapper of the <see cref="ISimpleFactory{TKey, TProduct}"/> instance, which will cache the created product instances.
+    /// </summary>
+    /// <typeparam name="TKey">The type of the feed used to produce products.</typeparam>
+    /// <typeparam name="TProduct">The type of the product.</typeparam>
+    /// <param name="factory">The original factory instance.</param>
+    /// <returns>The wrapped factory instance.</returns>
+    public static ISimpleFactory<TKey, TProduct> WithCache<TKey, TProduct>(this ISimpleFactory<TKey, TProduct> factory) where TProduct : class
     {
-        public static ISimpleFactory<TTarget, TKey> WithCache<TTarget, TKey>(this ISimpleFactory<TTarget, TKey> factory) where TTarget : class
-        {
-            return new CachedSimpleFactory<TTarget, TKey>(factory);
-        }
+        return new CachedSimpleFactory<TKey, TProduct>(factory);
+    }
 
-        public static bool Contains<TTarget, TKey>(this ISimpleFactory<TTarget, TKey> factory, TKey key) where TTarget : class
-        {
-            return factory.Keys.Any(item => EqualityComparer<TKey>.Default.Equals(key, item));
-        }
+    /// <summary>
+    /// Determines if the specified <typeparamref name="TKey"/> instance can be used to create a product.
+    /// </summary>
+    /// <typeparam name="TKey">The type of the feed used to produce products.</typeparam>
+    /// <typeparam name="TProduct">The type of the product.</typeparam>
+    /// <param name="factory">The original factory instance.</param>
+    /// <param name="key">The specified <typeparamref name="TKey"/> instance.</param>
+    /// <returns>Returns a <see cref="bool"/> value to determine if the specified <typeparamref name="TKey"/> instance can be used to create a product.</returns>
+    public static bool Contains<TKey, TProduct>(this ISimpleFactory<TKey, TProduct> factory, TKey key) where TProduct : class
+    {
+        return factory.Keys.Any(item => EqualityComparer<TKey>.Default.Equals(key, item));
+    }
 
-        public static bool TryCreate<TTarget, TKey>(this ISimpleFactory<TTarget, TKey> factory, TKey key, out TTarget result) where TTarget : class
-        {
-            bool contains = factory.Contains(key);
-            result = contains ? factory.Create(key) : null!;
-            return contains;
-        }
+    /// <summary>
+    /// Try creates the product that match the specified key.
+    /// </summary>
+    /// <typeparam name="TKey">The type of the feed used to produce products.</typeparam>
+    /// <typeparam name="TProduct">The type of the product.</typeparam>
+    /// <param name="factory">The original factory instance.</param>
+    /// <param name="key">The specified <typeparamref name="TKey"/> instance.</param>
+    /// <param name="product">The product that match the specified key.</param>
+    /// <returns>Returns a <see cref="bool"/> value to determine if it succeeded.</returns>
+    public static bool TryCreate<TKey, TProduct>(this ISimpleFactory<TKey, TProduct> factory, TKey key, out TProduct product) where TProduct : class
+    {
+        bool contains = factory.Contains(key);
+        product = contains ? factory.Create(key) : default!;
+        return contains;
+    }
 
-        public static IEnumerable<TTarget> CreateAll<TTarget, TKey>(this ISimpleFactory<TTarget, TKey> factory) where TTarget : class
-        {
-            return factory.Keys.Select(key => factory.Create(key));
-        }
+    /// <summary>
+    /// Creates all instances of the product in this simple-factory.
+    /// </summary>
+    /// <typeparam name="TKey">The type of the feed used to produce products.</typeparam>
+    /// <typeparam name="TProduct">The type of the product.</typeparam>
+    /// <param name="factory">The original factory instance.</param>
+    /// <returns>Returns an iterable collection of products.</returns>
+    public static IEnumerable<TProduct> CreateAll<TKey, TProduct>(this ISimpleFactory<TKey, TProduct> factory) where TProduct : class
+    {
+        return factory.Keys.Select(factory.Create);
+    }
 
-        private class CachedSimpleFactory<TTarget, TKey> : ISimpleFactory<TTarget, TKey> where TTarget : class
-        {
-            private readonly ConcurrentDictionary<TKey, TTarget> _cache = new();
-            private readonly ISimpleFactory<TTarget, TKey> _source;
+    private sealed class CachedSimpleFactory<TKey, TProduct> : ISimpleFactory<TKey, TProduct> where TProduct : class
+    {
+        private readonly ConcurrentDictionary<TKey, TProduct> _cache = new();
+        private readonly ISimpleFactory<TKey, TProduct> _factory;
 
-            public CachedSimpleFactory(ISimpleFactory<TTarget, TKey> source) => _source = source;
+        public CachedSimpleFactory(ISimpleFactory<TKey, TProduct> factory) => _factory = factory;
 
-            public IReadOnlyCollection<TKey> Keys => _source.Keys;
+        public IReadOnlyCollection<TKey> Keys => _factory.Keys;
 
-            public TTarget Create(TKey key) => _cache.GetOrAdd(key, k => _source.Create(k));
-        }
+        public TProduct Create(TKey feed) => _cache.GetOrAdd(feed, _factory.Create);
     }
 }
