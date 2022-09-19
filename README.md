@@ -1,4 +1,4 @@
-﻿# SimpleFactoryGenerator [![version](https://img.shields.io/badge/nuget-0.6.1-orange)](https://www.nuget.org/packages/SimpleFactoryGenerator)
+﻿# SimpleFactoryGenerator [![version](https://img.shields.io/nuget/v/SimpleFactoryGenerator.svg)](https://www.nuget.org/packages/SimpleFactoryGenerator)
 
 English | [中文](./README.zh-CN.md)
 

@@ -3,7 +3,7 @@
   <PropertyGroup>
     <MinClientVersion>2.12</MinClientVersion>
     <Authors>Dingping Zhang</Authors>
-    <Version>0.6.1</Version>
+    <Version>0.6.2</Version>
     <Copyright>Copyright (c) 2022 Dingping Zhang</Copyright>
     <PackageProjectUrl>https://github.com/DingpingZhang/SimpleFactoryGenerator</PackageProjectUrl>
     <RepositoryUrl>https://github.com/DingpingZhang/SimpleFactoryGenerator</RepositoryUrl>
