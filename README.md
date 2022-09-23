@@ -44,16 +44,14 @@ public class SimpleFactory
 }
 
 // Using
-public static void Main()
-{
-    var factory = new SimpleFactory();
-    IProduct product = factory.Create("product_a");
-}
+
+var factory = new SimpleFactory();
+IProduct product = factory.Create("product_a");
 ```
 
-After using this library, the writing of `SimpleFactory` will be omitted and instead, a `ProductAttribute<T, K>` needs to be declared on the concrete `Product` type. You have already noticed: the Attribute uses generics, which requires [C# 11](https://docs.microsoft.com/en-us/dotnet/csharp/programming-guide/generics/generics-and-attributes) support, for which you need to use Visual Studio 2022 and configure it in the `*.csproj` file: `<LangVersion>preview</LangVersion>`.
+After using this library, the writing of `SimpleFactory` will be omitted and instead, a `ProductAttribute<K, T>` needs to be declared on the concrete `Product` type. You have already noticed: the Attribute uses generics, which requires [C# 11](https://docs.microsoft.com/en-us/dotnet/csharp/programming-guide/generics/generics-and-attributes) support, for which you need to use Visual Studio 2022 and configure it in the `*.csproj` file: `<LangVersion>preview</LangVersion>`.
 
-> If your project cannot be configured for C# 11 or uses Visual Studio 2022, which prevents you from **directly** using Generic-Attribute, you can refer to section 1.1 and customize an Attribute to inherit from `ProductAttribute<T, K>` (the Generic-Attribute definitions were allowed before C# 11, just not directly available).
+> If your project cannot be configured for C# 11 or uses Visual Studio 2022, which prevents you from **directly** using Generic-Attribute, you can refer to section 1.1 and customize an Attribute to inherit from `ProductAttribute<K, T>` (the Generic-Attribute definitions were allowed before C# 11, just not directly available).
 
 ```csharp
 // It can also be an abstract class, or a normal class, and it is not mandatory to be an interface.
@@ -72,17 +70,15 @@ public class Product2 : IProduct
 }
 
 // Using
-public static void Main()
-{
-    // The SimpleFactory static class are provided by this library.
-    var factory = SimpleFactory
-        .For<string, IProduct>()
-        // .WithCache() is optional and when used will help implement the *Flyweight Pattern*
-        // that caches created instances (i.e. instances with the same key are created multiple times
-        // and the same instance is returned.)
-        .WithCache();
-    IProduct product = factory.Create("product_a");
-}
+
+// The SimpleFactory static class are provided by this library.
+var factory = SimpleFactory
+    .For<string, IProduct>()
+    // .WithCache() is optional and when used will help implement the *Flyweight Pattern*
+    // that caches created instances (i.e. instances with the same key are created multiple times
+    // and the same instance is returned.)
+    .WithCache();
+IProduct product = factory.Create("product_a");
 ```
 
 ## 3. Advanced
@@ -115,7 +111,7 @@ IProduct product = factory.CreateAll(key).FirstOrDefault();
 
 ### 3.2 Custom Attribute
 
-If you think the `ProductAttribute<T, K>` declaration too long, too ugly, too cumbersome (or can't use C# 11's Generic-Attribute syntax), you can customize an Attribute to inherit it.
+If you think the `ProductAttribute<K, T>` declaration too long, too ugly, too cumbersome (or can't use C# 11's Generic-Attribute syntax), you can customize an Attribute to inherit it.
 
 ```csharp
 public class ProductAttribute : ProductAttribute<string, IProduct>

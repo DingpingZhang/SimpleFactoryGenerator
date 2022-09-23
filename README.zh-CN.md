@@ -43,16 +43,14 @@ public class SimpleFactory
 }
 
 // 使用
-public static void Main()
-{
-    var factory = new SimpleFactory();
-    IProduct product = factory.Create("product_a");
-}
+
+var factory = new SimpleFactory();
+IProduct product = factory.Create("product_a");
 ```
 
-在使用本仓库后，将省去 `SimpleFactory` 的编写，而代替的，需要在具体的 `Product` 类型上声明一个 `ProductAttribute<T, K>`。你已经注意到：该 Attribute 使用了泛型，这需要 [C# 11](https://docs.microsoft.com/en-us/dotnet/csharp/programming-guide/generics/generics-and-attributes) 的支持，为此，你需要使用 VS2022，并在 `*.csproj` 文件中配置：`<LangVersion>preview</LangVersion>`。
+在使用本仓库后，将省去 `SimpleFactory` 的编写，而代替的，需要在具体的 `Product` 类型上声明一个 `ProductAttribute<K, T>`。你已经注意到：该 Attribute 使用了泛型，这需要 [C# 11](https://docs.microsoft.com/en-us/dotnet/csharp/programming-guide/generics/generics-and-attributes) 的支持，为此，你需要使用 VS2022，并在 `*.csproj` 文件中配置：`<LangVersion>preview</LangVersion>`。
 
-> 如果你的项目无法配置 C# 11 或使用 VS 2022，导致无法**直接**使用 Generic-Attribute，可以参考 1.1 小节，自定义一个 Attribute 继承自 `ProductAttribute<T, K>` 即可（在 C# 11 之前允许定义泛型 Attribute，只是无法直接使用而已）。
+> 如果你的项目无法配置 C# 11 或使用 VS 2022，导致无法**直接**使用 Generic-Attribute，可以参考 1.1 小节，自定义一个 Attribute 继承自 `ProductAttribute<K, T>` 即可（在 C# 11 之前允许定义泛型 Attribute，只是无法直接使用而已）。
 
 ```csharp
 // 也可以是 abstract class，或普通的 class，不强制要求是 interface。
@@ -60,26 +58,24 @@ public interface IProduct
 {
 }
 
-[ProductOfSimpleFactory<IProduct, string>("product_a")]
+[ProductOfSimpleFactory<string, IProduct>("product_a")]
 public class Product1 : IProduct
 {
 }
 
-[ProductOfSimpleFactory<IProduct, string>("product_b")]
+[ProductOfSimpleFactory<string, IProduct>("product_b")]
 public class Product2 : IProduct
 {
 }
 
 // 使用
-public static void Main()
-{
-    // SimpleFactory 静态类由本仓库提供。
-    var factory = SimpleFactory
-        .For<string, IProduct>()
-        // .WithCache() 是可选的，使用后将帮助实现“享元模式”，缓存已创建的实例（即多次创建 key 相同的实例，将返回同一个实例。）
-        .WithCache();
-    IProduct product = factory.Create("product_a");
-}
+
+// SimpleFactory 静态类由本仓库提供。
+var factory = SimpleFactory
+    .For<string, IProduct>()
+    // .WithCache() 是可选的，使用后将帮助实现“享元模式”，缓存已创建的实例（即多次创建 key 相同的实例，将返回同一个实例。）
+    .WithCache();
+IProduct product = factory.Create("product_a");
 ```
 
 ## 3. 高级使用
@@ -112,7 +108,7 @@ IProduct product = factory.CreateAll(key).FirstOrDefault();
 
 ### 3.2 自定义 Attribute
 
-如果你觉得 `ProductAttribute<T, K>` 声明太长、太丑、太麻烦（或者无法使用 C# 11 的泛型 Attribute 语法），可以自定义一个 Attribute 继承它，也是生效的，如：
+如果你觉得 `ProductAttribute<K, T>` 声明太长、太丑、太麻烦（或者无法使用 C# 11 的泛型 Attribute 语法），可以自定义一个 Attribute 继承它，也是生效的，如：
 
 ```csharp
 public class ProductAttribute : ProductAttribute<string, IProduct>
