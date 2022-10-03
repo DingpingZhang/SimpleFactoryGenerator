@@ -4,7 +4,7 @@ English | [中文](./README.zh-CN.md)
 
 This library is used to assist in the implementation of the *Simple Factory Pattern* by automatically generating conditional branch structure in the factory class at **compile time**, thus solving the problem of the pattern violating the ["open-close principle"](https://en.wikipedia.org/wiki/Open%E2%80%93closed_principle).
 
-Support for [Factory Method Pattern](https://refactoringguru.cn/design-patterns/factory-method) was added in `v0.6.0` (see section 3.1), so for the name of the repo *SimpleFactoryGenerator*, you can read as "Simple-Factory of Generator" or "Simple of Factory Generator".
+Support for [Factory Method Pattern](https://refactoringguru.cn/design-patterns/factory-method) was added in `v0.6.0` (see section 3.1), so for the name of the repo *SimpleFactoryGenerator*, you can read as "Simple-Factory Generator" or "Simple Factory-Generator".
 
 ## 1. Why?
 
