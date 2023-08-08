@@ -40,26 +40,26 @@ public class UnitTest1
             //.UseCreator((type, args) => null!)
             .UseCache()
             .Build<string>();
-        var factory2 = SimpleFactory.For<ProductType, IProduct>()
-            .UseCache()
-            .Build();
+        var factory2 = SimpleFactory
+            .For<ProductType, IProduct>()
+            .UseCache();
 
-        var a226 = factory2(ProductType.D);
+        var arr = factory1.CreateAll("111111").ToArray();
 
-        var a1 = factory1(ProductType.A, "1");
-        var a2 = factory1(ProductType.B, "11");
-        var a3 = factory1(ProductType.C, "111");
-        var a4 = factory1(ProductType.D, "1111");
-        var a5 = factory1(ProductType.D, "11111");
-        var a6 = factory1(ProductType.D, "111111");
-        var a7 = factory1(ProductType.D, "111111");
-        var a8 = factory1(ProductType.D, "111111");
+        var a1 = factory1.Create(ProductType.A, "1");
+        var a2 = factory1.Create(ProductType.B, "11");
+        var a3 = factory1.Create(ProductType.C, "111");
+        var a4 = factory1.Create(ProductType.D, "1111");
+        var a5 = factory1.Create(ProductType.D, "11111");
+        var a6 = factory1.Create(ProductType.D, "111111");
+        var a7 = factory1.Create(ProductType.D, "111111");
+        var a8 = factory1.Create(ProductType.D, "111111");
     }
 
     [Product(ProductType.D)]
     private class Product4 : IProduct
     {
-        public Product4(int a)
+        public Product4(string a)
         {
         }
     }

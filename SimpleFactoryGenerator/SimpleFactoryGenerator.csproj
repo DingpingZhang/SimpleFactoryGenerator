@@ -13,6 +13,98 @@
 
   <ItemGroup Label="Package">
     <None Include="..\SimpleFactoryGenerator.SourceGenerator\bin\$(Configuration)\netstandard2.0\SimpleFactoryGenerator.SourceGenerator.dll" PackagePath="analyzers\cs\" Pack="true" Visible="false" />
+    <None Include="Builder.generic.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Builder.generic.tt</DependentUpon>
+    </None>
+    <None Include="CacheBuilder.generic.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>CacheBuilder.generic.tt</DependentUpon>
+    </None>
+    <None Include="Extensions.generic.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Extensions.generic.tt</DependentUpon>
+    </None>
+    <None Include="ISimpleFactoryBuilder.generic.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>ISimpleFactoryBuilder.generic.tt</DependentUpon>
+    </None>
+    <None Include="SimpleFactoryImpl.generic.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>SimpleFactoryImpl.generic.tt</DependentUpon>
+    </None>
+  </ItemGroup>
+
+
+  <ItemGroup>
+    <None Update="Builder.generic.tt">
+      <Generator>TextTemplatingFileGenerator</Generator>
+      <LastGenOutput>Builder.generic.cs</LastGenOutput>
+    </None>
+    <None Update="CacheBuilder.generic.tt">
+      <Generator>TextTemplatingFileGenerator</Generator>
+      <LastGenOutput>CacheBuilder.generic.cs</LastGenOutput>
+    </None>
+    <None Update="Extensions.generic.tt">
+      <Generator>TextTemplatingFileGenerator</Generator>
+      <LastGenOutput>Extensions.generic.cs</LastGenOutput>
+    </None>
+    <None Update="ISimpleFactory.generic.tt">
+      <Generator>TextTemplatingFileGenerator</Generator>
+      <LastGenOutput>ISimpleFactory.generic.cs</LastGenOutput>
+    </None>
+    <None Update="ISimpleFactoryBuilder.generic.tt">
+      <Generator>TextTemplatingFileGenerator</Generator>
+      <LastGenOutput>ISimpleFactoryBuilder.generic.cs</LastGenOutput>
+    </None>
+    <None Update="SimpleFactoryImpl.generic.tt">
+      <Generator>TextTemplatingFileGenerator</Generator>
+      <LastGenOutput>SimpleFactoryImpl.generic.cs</LastGenOutput>
+    </None>
+  </ItemGroup>
+
+
+  <ItemGroup>
+    <Service Include="{508349b6-6b84-4df5-91f0-309beebad82d}" />
+  </ItemGroup>
+
+
+  <ItemGroup>
+    <Compile Update="Builder.generic.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Builder.generic.tt</DependentUpon>
+    </Compile>
+    <Compile Update="CacheBuilder.generic.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>CacheBuilder.generic.tt</DependentUpon>
+    </Compile>
+    <Compile Update="Extensions.generic.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Extensions.generic.tt</DependentUpon>
+    </Compile>
+    <Compile Update="ISimpleFactory.generic.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>ISimpleFactory.generic.tt</DependentUpon>
+    </Compile>
+    <Compile Update="ISimpleFactoryBuilder.generic.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>ISimpleFactoryBuilder.generic.tt</DependentUpon>
+    </Compile>
+    <Compile Update="SimpleFactoryImpl.generic.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>SimpleFactoryImpl.generic.tt</DependentUpon>
+    </Compile>
   </ItemGroup>
 
 </Project>
