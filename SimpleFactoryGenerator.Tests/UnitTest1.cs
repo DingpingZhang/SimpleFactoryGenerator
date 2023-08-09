@@ -1,3 +1,4 @@
+using System;
 using System.ComponentModel;
 using System.Linq;
 using System.Reflection.Emit;
@@ -37,23 +38,21 @@ public class UnitTest1
         var products = SimpleFactory<ProductType, IProduct>.Products;
 
         var factory1 = SimpleFactory.For<ProductType, IProduct>()
-            //.UseCreator((type, args) => null!)
-            .UseCache()
-            .Build<string>();
+            .WithCache();
         var factory2 = SimpleFactory
             .For<ProductType, IProduct>()
-            .UseCache();
+            .WithCreator((type, args) => null!)
+            .WithCache();
 
         var arr = factory1.CreateAll("111111").ToArray();
 
-        var a1 = factory1.Create(ProductType.A, "1");
-        var a2 = factory1.Create(ProductType.B, "11");
-        var a3 = factory1.Create(ProductType.C, "111");
-        var a4 = factory1.Create(ProductType.D, "1111");
-        var a5 = factory1.Create(ProductType.D, "11111");
         var a6 = factory1.Create(ProductType.D, "111111");
         var a7 = factory1.Create(ProductType.D, "111111");
         var a8 = factory1.Create(ProductType.D, "111111");
+
+        if (factory1.TryCreate(ProductType.A, out var a1, "111111"))
+        {
+        }
     }
 
     [Product(ProductType.D)]

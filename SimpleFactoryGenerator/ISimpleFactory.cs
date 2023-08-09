@@ -1,6 +1,12 @@
+using System;
+
 namespace SimpleFactoryGenerator;
 
-public interface ISimpleFactory<in TKey, out TProduct>
+public interface ISimpleFactory<in TKey, TProduct>
 {
-    TProduct Create(TKey key);
+    ISimpleFactory<TKey, TProduct> WithCreator(Func<Type, object?[], TProduct> creator);
+
+    ISimpleFactory<TKey, TProduct> WithCache();
+
+    TProduct Create(TKey key, params object?[] args);
 }

@@ -96,6 +96,7 @@ public class Generator : ISourceGenerator
                 var products = productClasses
                     .Select(item => new ProductInfo
                     {
+                        IsPrivate = IsPrivate(item.@class),
                         Label = GetLabel(item.attribute.ctorArgs),
                         Product = GetClassDeclaration(item.@class),
                     })
@@ -126,11 +127,16 @@ public class Generator : ISourceGenerator
         };
     }
 
-    private static string GetClassDeclaration(ITypeSymbol symbol)
+    private static bool IsPrivate(ISymbol symbol)
     {
-        return symbol.DeclaredAccessibility is Accessibility.Private
+        return symbol.DeclaredAccessibility is Accessibility.Private;
+    }
+
+    private static string GetClassDeclaration(ISymbol symbol)
+    {
+        return IsPrivate(symbol)
             ? $"{symbol.ContainingType.ToDisplayString()}+{symbol.Name}"
-            : symbol.ToDisplayString();
+            : symbol.ToDeclaration();
     }
 
     private static ITypeSymbol GetKeyType(INamedTypeSymbol attribute)

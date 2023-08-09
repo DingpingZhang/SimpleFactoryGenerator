@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using static SimpleFactoryGenerator.SourceGenerator.TemplateExtensions;
 
 namespace SimpleFactoryGenerator.SourceGenerator;
 
@@ -25,9 +26,11 @@ namespace SimpleFactoryGenerator.Implementation
         public static void Initialize()
         {{
 {infos.For(x => $@"
-{x.Items.For(item => $@"
+{x.Items.For(item => Text(item.IsPrivate ? $@"
             SimpleFactory<{x.KeyTypeDeclaration}, {x.TargetInterfaceDeclaration}>.Register({item.Label}, System.Type.GetType(""{item.Product}""));
-")}
+" : $@"
+            SimpleFactory<{x.KeyTypeDeclaration}, {x.TargetInterfaceDeclaration}>.Register({item.Label}, typeof({item.Product}));
+"))}
 
 ")}
         }}
