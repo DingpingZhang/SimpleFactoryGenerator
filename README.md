@@ -4,8 +4,6 @@ English | [中文](./README.zh-CN.md)
 
 This library is used to assist in the implementation of the *Simple Factory Pattern* by automatically generating conditional branch structure in the factory class at **compile time**, thus solving the problem of the pattern violating the ["open-close principle"](https://en.wikipedia.org/wiki/Open%E2%80%93closed_principle).
 
-Support for [Factory Method Pattern](https://refactoringguru.cn/design-patterns/factory-method) was added in `v0.6.0` (see section 3.1), so for the name of the repo *SimpleFactoryGenerator*, you can read as "Simple-Factory Generator" or "Simple Factory-Generator".
-
 ## 1. Why?
 
 The introduction and use of the *Simple Factory Pattern* will not be described here. One of the drawbacks of this pattern is the need to manually maintain a (potentially huge) conditional branch structure for creating concrete instances of a given enumeration type (including strings). As a result, the pattern violates the "open to extensions, closed to modifications" design principle, which is solved by this library. The idea is very simple: design principles are a set of rules of thumb to facilitate the maintenance of code by *Humans*, to compensate for some of the limitations of human thinking. Therefore, there is no violation of the *Design Principles* by simply leaving this difficult-to-maintain part of the code to the **compiler**.
@@ -85,31 +83,7 @@ IProduct product = factory.Create("product_a");
 
 It's not really that advanced, it's such a simple requirement, what are you expecting? :)
 
-### 3.1 Support for Factory Method Pattern
-
-The simple factory pattern is limited to using a key to get a product, while in some more general cases we may need to use more complex conditions to get a product, or use a constructor with parameters to create a product, which requires some abstraction of the creation conditions and creation method.
-
-The abstraction is actually "deferred implementation", leaving things that the library cannot decide to be implemented by the user. So the creation condition is abstracted into a method signed `CanCreate(TKey key): bool`, and the creation method is abstracted into a method signed `Create(TKey key): TProduct`; and both are included in an interface named `ICreator<TKey, TProduct>`.
-
-Instead of focusing on the Product type and using `ProductAttribute`, we will use `CreatorAttribute` to mark the Creator used to create the Product, as follows.
-
-```csharp
-[Creator<Foo, IProduct>]
-public class Product1Creator : ICreator<Foo, IProduct>
-{
-    public bool CanCreate(Foo foo) => foo.Name is "1" or "2" or "3";
-
-    public IProduct Create(Foo foo) => new Product1(foo);
-}
-
-// Using: Replace SimpleFactory.For() with Factory.For().
-var factory = Factory.For<Foo, IProduct>();
-var key = new Foo("1");
-// Note: CreateAll(), CreateFirst() and other methods are extension methods of `IFactory<K, U>` and need to be introduced into the `using SimpleFactoryGenerator;` namespace before they can be used.
-IProduct product = factory.CreateAll(key).FirstOrDefault();
-```
-
-### 3.2 Custom Attribute
+### 3.1 Custom Attribute
 
 If you think the `ProductAttribute<K, T>` declaration too long, too ugly, too cumbersome (or can't use C# 11's Generic-Attribute syntax), you can customize an Attribute to inherit it.
 
@@ -127,7 +101,7 @@ public class Product1 : IProduct
 }
 ```
 
-### 3.3 Mapping to multiple target interfaces
+### 3.2 Mapping to multiple target interfaces
 
 For the same concrete product type, it is allowed to supply to multiple different target interfaces.
 
@@ -143,4 +117,24 @@ var factory = SimpleFactory.For<string, IProduct>();
 IProduct product = factory.Create("product_a");
 var factory = SimpleFactory.For<string, IMobile>();
 IProduct mobile = factory.Create("iPhone");
+```
+
+### 3.3 Passing arguments to the constructor
+
+If a constructor of type `Product` has parameters, they can be passed as follows:
+
+```csharp
+_ = factory.Create("key", arg1, arg2, ...);
+```
+
+Since it is often not possible to determine the constructor that creates the type when using `factory`, it is recommended that all `Product` constructors have a consistent argument list.
+
+If there is a need to make the constructor arguments for each `Product` indeterminate, it is recommended that it be created in an Ioc container:
+
+```csharp
+var factory = SimpleFactory
+    .For<Key, Product>()
+    .WithCreator((type, args) => container.Resolve(type, args));
+
+_ = factory.Create(key);
 ```
