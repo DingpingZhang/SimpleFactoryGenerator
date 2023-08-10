@@ -4,15 +4,44 @@
     <TargetFramework>netstandard2.0</TargetFramework>
     <GeneratePackageOnBuild Condition="'$(Configuration)'=='Release'">true</GeneratePackageOnBuild>
     <GenerateDocumentationFile>True</GenerateDocumentationFile>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\SimpleFactoryGenerator.SourceGenerator\SimpleFactoryGenerator.SourceGenerator.csproj" ReferenceOutputAssembly="false" />
   </ItemGroup>
 
-
   <ItemGroup Label="Package">
     <None Include="..\SimpleFactoryGenerator.SourceGenerator\bin\$(Configuration)\netstandard2.0\SimpleFactoryGenerator.SourceGenerator.dll" PackagePath="analyzers\cs\" Pack="true" Visible="false" />
+    <None Include="..\README.md" Pack="true" PackagePath="\"/>
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="ISimpleFactory.generic.tt">
+      <Generator>TextTemplatingFileGenerator</Generator>
+      <LastGenOutput>ISimpleFactory.generic.cs</LastGenOutput>
+    </None>
+    <None Update="SimpleFactoryImpl.generic.tt">
+      <Generator>TextTemplatingFileGenerator</Generator>
+      <LastGenOutput>SimpleFactoryImpl.generic.cs</LastGenOutput>
+    </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Service Include="{508349b6-6b84-4df5-91f0-309beebad82d}" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Update="ISimpleFactory.generic.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>ISimpleFactory.generic.tt</DependentUpon>
+    </Compile>
+    <Compile Update="SimpleFactoryImpl.generic.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>SimpleFactoryImpl.generic.tt</DependentUpon>
+    </Compile>
   </ItemGroup>
 
 </Project>

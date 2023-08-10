@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+using System;
 
 namespace SimpleFactoryGenerator;
 
@@ -7,17 +7,20 @@ namespace SimpleFactoryGenerator;
 /// </summary>
 /// <typeparam name="TKey">The type of the feed used to produce products.</typeparam>
 /// <typeparam name="TProduct">The type of the product.</typeparam>
-public interface ISimpleFactory<TKey, out TProduct> where TProduct : class
+public interface ISimpleFactory<in TKey, TProduct>
 {
     /// <summary>
-    /// Gets all the <see cref="TKey"/> instances in this factory.
+    /// Replaces this factory's internal creator.
     /// </summary>
-    IReadOnlyCollection<TKey> Keys { get; }
+    /// <param name="creator">Creator for creating instances based on type.</param>
+    /// <returns>Returns itself.</returns>
+    ISimpleFactory<TKey, TProduct> WithCreator(Func<Type, object?[], TProduct> creator);
 
     /// <summary>
     /// Creates a product instance by the specified key.
     /// </summary>
     /// <param name="key">The specified key.</param>
+    /// <param name="args">The arguments required by the constructor that creates this instance.</param>
     /// <returns>Returns a <see cref="TProduct"/> instance.</returns>
-    TProduct Create(TKey key);
+    TProduct Create(TKey key, params object?[] args);
 }
