@@ -4,17 +4,17 @@
     <TargetFramework>netstandard2.0</TargetFramework>
     <GeneratePackageOnBuild Condition="'$(Configuration)'=='Release'">true</GeneratePackageOnBuild>
     <GenerateDocumentationFile>True</GenerateDocumentationFile>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\SimpleFactoryGenerator.SourceGenerator\SimpleFactoryGenerator.SourceGenerator.csproj" ReferenceOutputAssembly="false" />
   </ItemGroup>
 
-
   <ItemGroup Label="Package">
     <None Include="..\SimpleFactoryGenerator.SourceGenerator\bin\$(Configuration)\netstandard2.0\SimpleFactoryGenerator.SourceGenerator.dll" PackagePath="analyzers\cs\" Pack="true" Visible="false" />
+    <None Include="..\README.md" Pack="true" PackagePath="\"/>
   </ItemGroup>
-
 
   <ItemGroup>
     <None Update="ISimpleFactory.generic.tt">
@@ -27,11 +27,9 @@
     </None>
   </ItemGroup>
 
-
   <ItemGroup>
     <Service Include="{508349b6-6b84-4df5-91f0-309beebad82d}" />
   </ItemGroup>
-
 
   <ItemGroup>
     <Compile Update="ISimpleFactory.generic.cs">
