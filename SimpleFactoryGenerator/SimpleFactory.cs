@@ -32,7 +32,7 @@ public class SimpleFactory<TKey, TProduct> : ISimpleFactory<TKey, TProduct>
 
     public static IReadOnlyDictionary<TKey, Type> Products => Storage;
 
-    public static void Register(TKey key, Type type) => Storage.TryAdd(key, type);
+    public static void Register(TKey key, Type type) => Storage[key] = type;
 
     private static TProduct DefaultCreator(Type type, object?[] args) => (TProduct)Activator.CreateInstance(type, args);
 

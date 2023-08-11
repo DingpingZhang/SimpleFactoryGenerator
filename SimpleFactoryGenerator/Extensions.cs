@@ -2,6 +2,8 @@ using System.Collections.Concurrent;
 using System.Collections;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Linq;
 
 namespace SimpleFactoryGenerator;
 
@@ -82,6 +84,7 @@ sealed file class CacheSimpleFactory<TKey, TProduct> : ISimpleFactory<TKey, TPro
 
     public ISimpleFactory<TKey, TProduct> WithCreator(Func<Type, object?[], TProduct> creator)
     {
+        _cache.Clear();
         return _factory.WithCreator(creator);
     }
 
@@ -92,6 +95,7 @@ sealed file class CacheSimpleFactory<TKey, TProduct> : ISimpleFactory<TKey, TPro
         TProduct CreateInstance(CacheKey x) => _factory.Create(x.Key, x.Args);
     }
 
+    [DebuggerDisplay("{Key}")]
     private class CacheKey
     {
         public TKey Key { get; }
@@ -104,7 +108,12 @@ sealed file class CacheSimpleFactory<TKey, TProduct> : ISimpleFactory<TKey, TPro
             Args = args;
         }
 
-        public override bool Equals(object obj) => GetHashCode() == obj.GetHashCode();
+        public override bool Equals(object obj)
+        {
+            var other = (CacheKey)obj;
+            return EqualityComparer<TKey>.Default.Equals(Key, other.Key) &&
+                   Args.SequenceEqual(other.Args);
+        }
 
         public override int GetHashCode()
         {
