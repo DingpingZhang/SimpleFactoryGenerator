@@ -49,7 +49,7 @@ IProduct product = factory.Create("product_a");
 
 After using this library, the writing of `SimpleFactory` will be omitted and instead, a `ProductAttribute<K, T>` needs to be declared on the concrete `Product` type. You have already noticed: the Attribute uses generics, which requires [C# 11](https://docs.microsoft.com/en-us/dotnet/csharp/programming-guide/generics/generics-and-attributes) support, for which you need to use Visual Studio 2022 and configure it in the `*.csproj` file: `<LangVersion>preview</LangVersion>`.
 
-> If your project cannot be configured for C# 11 or uses Visual Studio 2022, which prevents you from **directly** using Generic-Attribute, you can refer to section 1.1 and customize an Attribute to inherit from `ProductAttribute<K, T>` (the Generic-Attribute definitions were allowed before C# 11, just not directly available).
+> If your project cannot be configured for C# 11 or uses Visual Studio 2022, which prevents you from **directly** using Generic-Attribute, you can refer to section 3.1 and customize an Attribute to inherit from `ProductAttribute<K, T>` (the Generic-Attribute definitions were allowed before C# 11, just not directly available).
 
 ```csharp
 // It can also be an abstract class, or a normal class, and it is not mandatory to be an interface.
@@ -88,15 +88,15 @@ It's not really that advanced, it's such a simple requirement, what are you expe
 If you think the `ProductAttribute<K, T>` declaration too long, too ugly, too cumbersome (or can't use C# 11's Generic-Attribute syntax), you can customize an Attribute to inherit it.
 
 ```csharp
-public class ProductAttribute : ProductAttribute<string, IProduct>
+public class FruitAttribute : ProductAttribute<string, IProduct>
 {
-    public ProductAttribute(string productName) : base(productName)
+    public FruitAttribute(string name) : base(name)
     {
     }
 }
 
-[Product("product_a")]
-public class Product1 : IProduct
+[Fruit("apple")]
+public class Apple : IProduct
 {
 }
 ```
@@ -106,17 +106,18 @@ public class Product1 : IProduct
 For the same concrete product type, it is allowed to supply to multiple different target interfaces.
 
 ```csharp
-[Product("product_a")]
-[Mobile("iPhone")]
-public class Product1 : IProduct, IMobile
+[Animal("mouse")]
+[Food("duck_neck")]
+public class Mouse : IAnimal, IFood
 {
 }
 
 // Using
-var factory = SimpleFactory.For<string, IProduct>();
-IProduct product = factory.Create("product_a");
-var factory = SimpleFactory.For<string, IMobile>();
-IProduct mobile = factory.Create("iPhone");
+var animalFactory = SimpleFactory.For<string, IAnimal>();
+IProduct mouse = animalFactory.Create("mouse");
+
+var foodFactory = SimpleFactory.For<string, IFood>();
+IProduct duckNeck = foodFactory.Create("duck_neck");
 ```
 
 ### 3.3 Passing arguments to the constructor
@@ -134,7 +135,9 @@ If there is a need to make the constructor arguments for each `Product` indeterm
 ```csharp
 var factory = SimpleFactory
     .For<Key, Product>()
-    .WithCreator((type, args) => container.Resolve(type, args));
+    .WithCreator((type, args) => (Product)container.Resolve(type, args));
 
 _ = factory.Create(key);
 ```
+
+Note: If you use `.WithCreator()` after `.WithCache()`, it will cause the previous cache to be cleared.

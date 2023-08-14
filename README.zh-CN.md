@@ -48,7 +48,7 @@ IProduct product = factory.Create("product_a");
 
 在使用本仓库后，将省去 `SimpleFactory` 的编写，而代替的，需要在具体的 `Product` 类型上声明一个 `ProductAttribute<K, T>`。你已经注意到：该 Attribute 使用了泛型，这需要 [C# 11](https://docs.microsoft.com/en-us/dotnet/csharp/programming-guide/generics/generics-and-attributes) 的支持，为此，你需要使用 VS2022，并在 `*.csproj` 文件中配置：`<LangVersion>preview</LangVersion>`。
 
-> 如果你的项目无法配置 C# 11 或使用 VS 2022，导致无法**直接**使用 Generic-Attribute，可以参考 1.1 小节，自定义一个 Attribute 继承自 `ProductAttribute<K, T>` 即可（在 C# 11 之前允许定义泛型 Attribute，只是无法直接使用而已）。
+> 如果你的项目无法配置 C# 11 或使用 VS 2022，导致无法**直接**使用 Generic-Attribute，可以参考 3.1 小节，自定义一个 Attribute 继承自 `ProductAttribute<K, T>` 即可（在 C# 11 之前允许定义泛型 Attribute，只是无法直接使用而已）。
 
 ```csharp
 // 也可以是 abstract class，或普通的 class，不强制要求是 interface。
@@ -56,12 +56,12 @@ public interface IProduct
 {
 }
 
-[ProductOfSimpleFactory<string, IProduct>("product_a")]
+[Product<string, IProduct>("product_a")]
 public class Product1 : IProduct
 {
 }
 
-[ProductOfSimpleFactory<string, IProduct>("product_b")]
+[Product<string, IProduct>("product_b")]
 public class Product2 : IProduct
 {
 }
@@ -85,15 +85,15 @@ IProduct product = factory.Create("product_a");
 如果你觉得 `ProductAttribute<K, T>` 声明太长、太丑、太麻烦（或者无法使用 C# 11 的泛型 Attribute 语法），可以自定义一个 Attribute 继承它，也是生效的，如：
 
 ```csharp
-public class ProductAttribute : ProductAttribute<string, IProduct>
+public class FruitAttribute : ProductAttribute<string, IProduct>
 {
-    public ProductAttribute(string productName) : base(productName)
+    public FruitAttribute(string name) : base(name)
     {
     }
 }
 
-[Product("product_a")]
-public class Product1 : IProduct
+[Fruit("apple")]
+public class Apple : IProduct
 {
 }
 ```
@@ -103,18 +103,18 @@ public class Product1 : IProduct
 对于同一个具体产品类型，是允许供应给多个不同的目标接口的，如：
 
 ```csharp
-[Product("product_a")]
-[Mobile("iPhone")]
-public class Product1 : IProduct, IMobile
+[Animal("老鼠")]
+[Food("鸭脖")]
+public class Mouse : IAnimal, IFood
 {
 }
 
-// 使用
-var factory = SimpleFactory.For<string, IProduct>();
-IProduct product = factory.Create("product_a");
+// Using
+var animalFactory = SimpleFactory.For<string, IAnimal>();
+IProduct mouse = animalFactory.Create("老鼠");
 
-var factory = SimpleFactory.For<string, IMobile>();
-IProduct mobile = factory.Create("iPhone");
+var foodFactory = SimpleFactory.For<string, IFood>();
+IProduct duckNeck = foodFactory.Create("鸭脖");
 ```
 
 ### 3.3 传递参数到构造函数
@@ -132,7 +132,9 @@ _ = factory.Create("key", arg1, arg2, ...);
 ```csharp
 var factory = SimpleFactory
     .For<Key, Product>()
-    .WithCreator((type, args) => container.Resolve(type, args));
+    .WithCreator((type, args) => (Product)container.Resolve(type, args));
 
 _ = factory.Create(key);
 ```
+
+注意：若在 `.WithCache()` 之后使用 `.WithCreator()`，则会导致之前的缓存被清空。（这很合理，一朝天子一朝臣，Creator 都变了，哪里还敢用之前的缓存）
