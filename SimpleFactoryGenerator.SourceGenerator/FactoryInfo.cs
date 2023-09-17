@@ -2,11 +2,11 @@ using System.Collections.Generic;
 
 namespace SimpleFactoryGenerator.SourceGenerator;
 
-internal class FactoryInfo<T>
+internal class FactoryInfo
 {
-    public string TargetInterfaceDeclaration { get; set; } = null!;
+    public string InterfaceType { get; set; } = null!;
 
-    public string KeyTypeDeclaration { get; set; } = null!;
+    public string LabelType { get; set; } = null!;
 
-    public IReadOnlyCollection<T> Items { get; set; } = null!;
+    public IReadOnlyCollection<ProductInfo> Items { get; set; } = null!;
 }

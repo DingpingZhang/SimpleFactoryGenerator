@@ -22,92 +22,37 @@ public class Generator : ISourceGenerator
 
         Compilation compilation = context.Compilation;
 
-        INamedTypeSymbol? productSymbol = compilation
-            .GetTypeByMetadataName("SimpleFactoryGenerator.ProductAttribute`2")?
-            .ConstructUnboundGenericType();
-
-        if (productSymbol is null)
+        if (!AttributeItem.Initialize(compilation))
         {
             return;
         }
 
-        var markedClasses = receiver.CandidateClasses
+        var attributeItems = receiver.CandidateClasses
             .GroupBy(@class => @class.SyntaxTree)
             .SelectMany(group =>
             {
                 SemanticModel model = compilation.GetSemanticModel(group.Key);
                 return group
-                    .Select(@class => model.GetDeclaredSymbol(@class))
+                    .Select(x => model.GetDeclaredSymbol(x))
                     .OfType<INamedTypeSymbol>()
-                    .Select(@class => (
-                        @class,
-                        attributes: @class.GetAttributes(productSymbol).ToList()))
-                    .Where(item => item.attributes.Any());
+                    .SelectMany(x => AttributeItem.From(x));
             })
-            .ToList();
+            .ToArray();
 
-        if (!markedClasses.Any())
+        var classSymbols = attributeItems
+            .Select(x => x.ClassType)
+            .Distinct(SymbolEqualityComparer.Default)
+            .OfType<INamedTypeSymbol>()
+            .ToArray();
+        if (!context.CheckNoGenericParameters(classSymbols))
         {
             return;
         }
 
-        if (!context.CheckNoGenericParameters(markedClasses.Select(item => item.@class)))
+        var factoryInfos = GetFactories(context, attributeItems);
+        if (factoryInfos.Any())
         {
-            return;
-        }
-
-        var groups = markedClasses
-            .SelectMany(info => info.attributes
-                .Select(attribute => (
-                    info.@class,
-                    attribute,
-                    target: GetTargetType(attribute.type))))
-            .GroupBy(item => item.target)
-            .ToList();
-
-        var productInfos = new List<FactoryInfo<ProductInfo>>();
-        foreach (var group in groups)
-        {
-            var groupList = group.ToList();
-            var target = group.Key;
-
-            var keyTypes = groupList
-                .Select(item => GetKeyType(item.attribute.type))
-                .Distinct(SymbolEqualityComparer.Default)
-                .ToArray();
-            if (!context.CheckTheSameKeyType(keyTypes.Length, groupList.Select(item => item.@class)))
-            {
-                return;
-            }
-
-            var productClasses = groupList
-                .Where(item => productSymbol.EqualAttribute(item.attribute.type))
-                .ToArray();
-            if (!context.CheckImplementTargetInterface(target, productClasses.Select(item => item.@class)))
-            {
-                return;
-            }
-
-            ISymbol keyType = keyTypes.Single()!;
-
-            string keyTypeDeclaration = keyType.ToDeclaration();
-            if (productClasses.Any())
-            {
-                var products = productClasses
-                    .Select(item => new ProductInfo
-                    {
-                        IsPrivate = IsPrivate(item.@class),
-                        Label = GetLabel(item.attribute.ctorArgs),
-                        Product = GetClassDeclaration(item.@class),
-                    })
-                    .ToArray();
-                productInfos.Add(CreateFactoryInfo(target, keyTypeDeclaration, products));
-            }
-        }
-
-        if (productInfos.Any())
-        {
-            string simpleFactorySource = ImportTypeTemplate.Generate(productInfos);
+            string simpleFactorySource = ImportTypeTemplate.Generate(factoryInfos);
             context.AddSource("ImportType.g.cs", SourceText.From(simpleFactorySource, Encoding.UTF8));
         }
     }
@@ -117,49 +62,36 @@ public class Generator : ISourceGenerator
         context.RegisterForSyntaxNotifications(() => new SyntaxReceiver());
     }
 
-    private static FactoryInfo<T> CreateFactoryInfo<T>(ITypeSymbol target, string keyType, IReadOnlyCollection<T> items)
+    private static IEnumerable<FactoryInfo> GetFactories(GeneratorExecutionContext context, IEnumerable<AttributeItem> attributeItems)
     {
-        return new FactoryInfo<T>
+        var groups = attributeItems.GroupBy(x => x.InterfaceType);
+
+        foreach (var group in groups)
         {
-            TargetInterfaceDeclaration = target.ToDeclaration(),
-            KeyTypeDeclaration = keyType,
-            Items = items,
-        };
-    }
+            var target = group.Key;
+            var items = group.ToArray();
+            var classTypes = items.Select(x => x.ClassType);
+            if (!context.CheckImplementTargetInterface(target, classTypes))
+            {
+                yield break;
+            }
 
-    private static bool IsPrivate(ISymbol symbol)
-    {
-        return symbol.DeclaredAccessibility is Accessibility.Private;
-    }
+            var keyTypes = items.Select(x => x.LabelType).Distinct(SymbolEqualityComparer.Default).ToArray();
+            if (!context.CheckTheSameKeyType(keyTypes.Length, classTypes))
+            {
+                yield break;
+            }
 
-    private static string GetClassDeclaration(ISymbol symbol)
-    {
-        return IsPrivate(symbol)
-            ? $"{symbol.ContainingType.ToDisplayString()}+{symbol.Name}"
-            : symbol.ToDeclaration();
-    }
+            string labelType = keyTypes[0]!.ToDeclaration();
+            string interfaceType = target.ToDeclaration();
 
-    private static ITypeSymbol GetKeyType(INamedTypeSymbol attribute)
-    {
-        const int keyTypeIndex = 0;
-
-        // e.g. Creator<*TKey*, TProduct> or Product<*TKey*, TProduct>.
-        return attribute.TypeArguments[keyTypeIndex];
-    }
-
-    private static ITypeSymbol GetTargetType(INamedTypeSymbol symbol)
-    {
-        const int targetTypeIndex = 1;
-
-        // e.g. Creator<TKey, *TProduct*> or Product<TKey, *TProduct*>.
-        return symbol.TypeArguments[targetTypeIndex];
-    }
-
-    private static string GetLabel(IReadOnlyList<TypedConstant> ctorArgs)
-    {
-        const int labelIndex = 0;
-
-        return ctorArgs[labelIndex].ToDisplayValue();
+            yield return new FactoryInfo
+            {
+                LabelType = labelType,
+                InterfaceType = interfaceType,
+                Items = items.Select(ProductInfo.From).ToArray(),
+            };
+        }
     }
 
     private class SyntaxReceiver : ISyntaxReceiver

@@ -1,6 +1,5 @@
-using System.Collections.Concurrent;
 using System.Collections;
-using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -69,30 +68,32 @@ public static class Extensions
     /// <returns>The wrapped factory instance.</returns>
     public static ISimpleFactory<TKey, TProduct> WithCache<TKey, TProduct>(this ISimpleFactory<TKey, TProduct> factory)
     {
-        return factory is CacheSimpleFactory<TKey, TProduct>
-            ? factory
-            : new CacheSimpleFactory<TKey, TProduct>(factory);
+        ISimpleFactory<TKey, TProduct> originalFactory = factory is CacheSimpleFactory<TKey, TProduct> cacheFactory
+            ? cacheFactory.Factory
+            : factory;
+        return new CacheSimpleFactory<TKey, TProduct>(originalFactory);
     }
 }
 
 sealed file class CacheSimpleFactory<TKey, TProduct> : ISimpleFactory<TKey, TProduct>
 {
     private readonly ConcurrentDictionary<CacheKey, TProduct> _cache = new();
-    private readonly ISimpleFactory<TKey, TProduct> _factory;
 
-    public CacheSimpleFactory(ISimpleFactory<TKey, TProduct> factory) => _factory = factory;
+    public ISimpleFactory<TKey, TProduct> Factory { get; }
 
-    public ISimpleFactory<TKey, TProduct> WithCreator(Func<Type, object?[], TProduct> creator)
+    public CacheSimpleFactory(ISimpleFactory<TKey, TProduct> factory) => Factory = factory;
+
+    public ISimpleFactory<TKey, TProduct> WithCreator(ProductCreator<TKey, TProduct> creator)
     {
         _cache.Clear();
-        return _factory.WithCreator(creator);
+        return Factory.WithCreator(creator);
     }
 
     public TProduct Create(TKey key, params object?[] args)
     {
         return _cache.GetOrAdd(new CacheKey(key, args), CreateInstance);
 
-        TProduct CreateInstance(CacheKey x) => _factory.Create(x.Key, x.Args);
+        TProduct CreateInstance(CacheKey x) => Factory.Create(x.Key, x.Args);
     }
 
     [DebuggerDisplay("{Key}")]

@@ -13,7 +13,7 @@ public class SimpleFactoryTests
     {
         var products = SimpleFactory<string, IProductCrossAssembly>.Products;
 
-        products.Count.ShouldBe(3);
+        products.Count.ShouldBe(4);
         products.Values.Contains(typeof(Product1InThisAssembly)).ShouldBeTrue();
 
         var product = products["Product1InOtherAssembly"];
@@ -52,9 +52,10 @@ public class SimpleFactoryTests
     {
         int count = 0;
         var factory = SimpleFactory.For<string, IProductCrossAssembly>()
-            .WithCreator((type, args) =>
+            .WithCreator((key, type, args, tags) =>
             {
                 count++;
+                string when = tags.GetValue<string>("when");
                 return (IProductCrossAssembly)Activator.CreateInstance(type, args)!;
             })
             .WithCache();
@@ -80,7 +81,7 @@ public class SimpleFactoryTests
         _ = factory.CreateAll(name).ToArray();
 
         int count = 0;
-        factory = factory.WithCreator((_, _) =>
+        factory = factory.WithCreator((_, _, _, _) =>
         {
             count++;
             return null!;

@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using System.Linq;
 using Microsoft.CodeAnalysis;
 
 namespace SimpleFactoryGenerator.SourceGenerator;
@@ -50,27 +49,10 @@ internal static class Extensions
         }
     }
 
-    public static IEnumerable<(INamedTypeSymbol type, IReadOnlyList<TypedConstant> ctorArgs)> GetAttributes(this INamedTypeSymbol symbol, params INamedTypeSymbol[] attributeSymbols)
-    {
-        return from attribute in symbol.GetAttributes()
-               let type = attribute.AttributeClass
-               let productAttribute = type.GetSelfAndBaseTypes()
-                   .OfType<INamedTypeSymbol>()
-                   .FirstOrDefault(symbol => attributeSymbols.Any(attribute => attribute.EqualAttribute(symbol)))
-               where productAttribute is not null
-               let ctorArgs = (IReadOnlyList<TypedConstant>)attribute.ConstructorArguments
-               select (productAttribute, ctorArgs);
-    }
-
     public static bool EqualAttribute(this INamedTypeSymbol expected, INamedTypeSymbol? actual)
     {
         return actual is { IsGenericType: true, IsUnboundGenericType: false } &&
                expected.Equals(actual.ConstructUnboundGenericType(), SymbolEqualityComparer.Default) ||
                expected.Equals(actual, SymbolEqualityComparer.Default);
-    }
-
-    public static IEnumerable<INamedTypeSymbol> FilterNoParameterlessCtorClasses(this IEnumerable<INamedTypeSymbol> classes)
-    {
-        return classes.Where(item => !item.Constructors.Any(ctor => !ctor.Parameters.Any()));
     }
 }

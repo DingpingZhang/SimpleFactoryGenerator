@@ -2,19 +2,21 @@ using System;
 
 namespace SimpleFactoryGenerator;
 
+public delegate TProduct ProductCreator<in TKey, out TProduct>(TKey key, Type productType, object?[] args, ITags tags);
+
 /// <summary>
 /// Represents a simple-factory.
 /// </summary>
 /// <typeparam name="TKey">The type of the feed used to produce products.</typeparam>
 /// <typeparam name="TProduct">The type of the product.</typeparam>
-public interface ISimpleFactory<in TKey, TProduct>
+public interface ISimpleFactory<TKey, TProduct>
 {
     /// <summary>
     /// Replaces this factory's internal creator.
     /// </summary>
     /// <param name="creator">Creator for creating instances based on type.</param>
     /// <returns>Returns itself.</returns>
-    ISimpleFactory<TKey, TProduct> WithCreator(Func<Type, object?[], TProduct> creator);
+    ISimpleFactory<TKey, TProduct> WithCreator(ProductCreator<TKey, TProduct> creator);
 
     /// <summary>
     /// Creates a product instance by the specified key.
