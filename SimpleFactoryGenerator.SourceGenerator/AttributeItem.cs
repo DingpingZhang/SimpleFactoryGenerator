@@ -28,10 +28,8 @@ internal class AttributeItem
         return productSymbol != null;
     }
 
-    public static IEnumerable<AttributeItem> From(INamedTypeSymbol classSymbol)
+    public static IEnumerable<AttributeItem> From(GeneratorExecutionContext context, INamedTypeSymbol classSymbol)
     {
-        const int labelIndex = 0;
-
         foreach (AttributeData attribute in classSymbol.GetAttributes())
         {
             INamedTypeSymbol? symbol = attribute.AttributeClass;
@@ -44,12 +42,26 @@ internal class AttributeItem
                 continue;
             }
 
+            var labelType = GetLabelType(productSymbol);
             var ctorArgs = attribute.ConstructorArguments;
-            string labelValue = ctorArgs[labelIndex].ToDisplayValue();
+            if (ctorArgs.Length < 1)
+            {
+                context.ReportCorrectAttributeCtor(attribute, labelType);
+                continue;
+            }
+
+            var label = ctorArgs[0];
+            if (!SymbolEqualityComparer.Default.Equals(label.Type, labelType))
+            {
+                context.ReportCorrectAttributeCtor(attribute, labelType);
+                continue;
+            }
+
+            string labelValue = label.ToDisplayValue();
 
             yield return new AttributeItem
             {
-                LabelType = GetLabelType(productSymbol),
+                LabelType = labelType,
                 InterfaceType = GetInterfaceType(productSymbol),
                 ClassType = classSymbol,
                 LabelValue = labelValue,
@@ -78,7 +90,8 @@ internal class AttributeItem
     {
         var parameters = attribute.AttributeConstructor!.Parameters;
         var arguments = attribute.ConstructorArguments;
-        foreach (var (x, y) in parameters.Zip(arguments, (x, y) => (x, y)))
+        // skip the 'key' argument.
+        foreach (var (x, y) in parameters.Zip(arguments, (x, y) => (x, y)).Skip(1))
         {
             yield return (x.Name, y.ToDisplayValue());
         }

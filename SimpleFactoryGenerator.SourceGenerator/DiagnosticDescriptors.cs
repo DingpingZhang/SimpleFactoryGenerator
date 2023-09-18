@@ -32,6 +32,14 @@ internal static class DiagnosticDescriptors
         DiagnosticSeverity.Error,
         true);
 
+    public static readonly DiagnosticDescriptor CorrectAttributeCtor = new(
+        "SFG004",
+        "The first argument to the constructor of product attribute must be the 'Key'",
+        "The product attribute must have at least one parameter that is the Key used to create the product, consider implementing an `{0}({1} key)` constructor",
+        SimpleFactoryGenerator,
+        DiagnosticSeverity.Error,
+        true);
+
     public static bool CheckImplementTargetInterface(this GeneratorExecutionContext context, ITypeSymbol target, IEnumerable<INamedTypeSymbol> symbols)
     {
         var invalidClasses = symbols
@@ -75,19 +83,38 @@ internal static class DiagnosticDescriptors
         return false;
     }
 
-    public static bool CheckTheSameKeyType(this GeneratorExecutionContext context, int keyCount, IEnumerable<INamedTypeSymbol> symbols)
+    public static bool CheckTheSameKeyType(this GeneratorExecutionContext context, IEnumerable<AttributeItem> items)
     {
-        if (keyCount <= 1)
+        var issues = items
+            .GroupBy(x => x.ClassType)
+            .Select(x => x.ToArray())
+            .Where(x => x.Length > 1)
+            .Where(x => x.Select(y => y.LabelType).Distinct(SymbolEqualityComparer.Default).Count() > 1)
+            .ToArray();
+        if (issues.Length is 0)
         {
             return true;
         }
 
-        var locations = symbols.SelectMany(item => item.Locations);
+        var locations = issues.SelectMany(x => x.SelectMany(y => y.ClassType.Locations)).Distinct();
         foreach (var location in locations)
         {
             context.ReportDiagnostic(Diagnostic.Create(TheSameKeyType, location));
         }
 
         return false;
+    }
+
+    public static void ReportCorrectAttributeCtor(this GeneratorExecutionContext context, AttributeData attribute, ITypeSymbol labelType)
+    {
+        if (attribute.AttributeClass is null)
+        {
+            return;
+        }
+
+        foreach (var location in attribute.AttributeClass.Locations)
+        {
+            context.ReportDiagnostic(Diagnostic.Create(CorrectAttributeCtor, location, attribute.AttributeClass.Name, labelType.ToDisplayString()));
+        }
     }
 }

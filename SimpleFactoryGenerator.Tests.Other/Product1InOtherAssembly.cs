@@ -7,3 +7,7 @@ internal class Product1InOtherAssembly : IProductCrossAssembly
 
     public Product1InOtherAssembly(string name) => Name = name;
 }
+
+public class TestAttribute(int key) : ProductAttribute<int, IProductCrossAssembly>(key)
+{
+}

@@ -35,7 +35,7 @@ public class Generator : ISourceGenerator
                 return group
                     .Select(x => model.GetDeclaredSymbol(x))
                     .OfType<INamedTypeSymbol>()
-                    .SelectMany(AttributeItem.From);
+                    .SelectMany(x => AttributeItem.From(context, x));
             })
             .ToArray();
 
@@ -76,12 +76,12 @@ public class Generator : ISourceGenerator
                 yield break;
             }
 
-            var keyTypes = items.Select(x => x.LabelType).Distinct(SymbolEqualityComparer.Default).ToArray();
-            if (!context.CheckTheSameKeyType(keyTypes.Length, classTypes))
+            if (!context.CheckTheSameKeyType(items))
             {
                 yield break;
             }
 
+            var keyTypes = items.Select(x => x.LabelType).Distinct(SymbolEqualityComparer.Default).ToArray();
             string labelType = keyTypes[0]!.ToDeclaration();
             string interfaceType = target.ToDeclaration();
 
