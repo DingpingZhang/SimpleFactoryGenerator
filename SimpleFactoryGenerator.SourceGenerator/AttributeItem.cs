@@ -1,12 +1,13 @@
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace SimpleFactoryGenerator.SourceGenerator;
 
 internal class AttributeItem
 {
-    public static INamedTypeSymbol ProductSymbol { get; private set; } = null!;
+    private static INamedTypeSymbol ProductSymbol { get; set; } = null!;
 
     public ITypeSymbol LabelType { get; set; } = null!;
 
@@ -85,6 +86,54 @@ internal class AttributeItem
 
     private static IEnumerable<(string key, string value)> GetTagsFromProperty(AttributeData attribute)
     {
-        return attribute.NamedArguments.Select(x => (x.Key, x.Value.ToDisplayValue()));
+        var props = attribute.AttributeClass!.GetMembers().OfType<IPropertySymbol>().ToArray();
+        var propNames = props.Select(x => x.Name).ToArray();
+        var defaultValues = props
+            .Select(x => (name: x.Name, value: GetDefaultValue(x)))
+            .Where(x => !string.IsNullOrEmpty(x.value))
+            .ToDictionary(x => x.name, x => x.value!);
+        var values = attribute.NamedArguments.ToDictionary(x => x.Key, x => x.Value.ToDisplayValue());
+
+        foreach (string propName in propNames)
+        {
+            if (values.TryGetValue(propName, out string value))
+            {
+                yield return (propName, value);
+            }
+            else if (defaultValues.TryGetValue(propName, out value))
+            {
+                yield return (propName, value);
+            }
+            else
+            {
+                yield return (propName, "default!");
+            }
+        }
+
+        static string? GetDefaultValue(IPropertySymbol property)
+        {
+            if (property.DeclaringSyntaxReferences.Length != 1)
+            {
+                return null;
+            }
+
+            if (property.DeclaringSyntaxReferences[0].GetSyntax() is not PropertyDeclarationSyntax syntax)
+            {
+                return null;
+            }
+
+            return syntax.Initializer is { } initializer
+                ? GetDisplayValue(property.Type, initializer.Value)
+                : null;
+        }
+
+        static string GetDisplayValue(ITypeSymbol type, ExpressionSyntax syntax)
+        {
+            return type switch
+            {
+                { TypeKind: TypeKind.Enum } => $"{type.ContainingSymbol.ToDeclaration()}.{syntax}",
+                _ => syntax.ToString(),
+            };
+        }
     }
 }

@@ -35,7 +35,7 @@ public class Generator : ISourceGenerator
                 return group
                     .Select(x => model.GetDeclaredSymbol(x))
                     .OfType<INamedTypeSymbol>()
-                    .SelectMany(x => AttributeItem.From(x));
+                    .SelectMany(AttributeItem.From);
             })
             .ToArray();
 
@@ -49,7 +49,7 @@ public class Generator : ISourceGenerator
             return;
         }
 
-        var factoryInfos = GetFactories(context, attributeItems);
+        var factoryInfos = GetFactories(context, attributeItems).ToArray();
         if (factoryInfos.Any())
         {
             string simpleFactorySource = ImportTypeTemplate.Generate(factoryInfos);
