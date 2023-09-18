@@ -2,7 +2,7 @@ using System;
 
 namespace SimpleFactoryGenerator;
 
-public delegate TProduct ProductCreator<in TKey, out TProduct>(TKey key, Type productType, object?[] args, ITags tags);
+public delegate TProduct ProductCreator<in TKey, out TProduct>(Type productType, ITags tags, TKey key, object?[] args);
 
 /// <summary>
 /// Represents a simple-factory.
@@ -23,6 +23,6 @@ public interface ISimpleFactory<TKey, TProduct>
     /// </summary>
     /// <param name="key">The specified key.</param>
     /// <param name="args">The arguments required by the constructor that creates this instance.</param>
-    /// <returns>Returns a <see cref="TProduct"/> instance.</returns>
+    /// <returns>Returns a <typeparamref name="TProduct"/> instance.</returns>
     TProduct Create(TKey key, params object?[] args);
 }

@@ -40,7 +40,7 @@ public class SimpleFactory<TKey, TProduct> : ISimpleFactory<TKey, TProduct>
         TagStorage[key] = tags;
     }
 
-    private static TProduct DefaultCreator(TKey key, Type type, object?[] args, ITags tags)
+    private static TProduct DefaultCreator(Type type, ITags tags, TKey key, object?[] args)
     {
         return (TProduct)Activator.CreateInstance(type, args);
     }
@@ -59,6 +59,6 @@ public class SimpleFactory<TKey, TProduct> : ISimpleFactory<TKey, TProduct>
     /// <inheritdoc />
     public TProduct Create(TKey key, params object?[] args)
     {
-        return _creator(key, Products[key], args, Tags[key]);
+        return _creator(Products[key], Tags[key], key, args);
     }
 }

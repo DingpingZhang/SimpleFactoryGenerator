@@ -52,7 +52,7 @@ public class SimpleFactoryTests
     {
         int count = 0;
         var factory = SimpleFactory.For<string, IProductCrossAssembly>()
-            .WithCreator((key, type, args, tags) =>
+            .WithCreator((type, tags, key,  args) =>
             {
                 count++;
                 string when = tags.GetValue<string>("when");

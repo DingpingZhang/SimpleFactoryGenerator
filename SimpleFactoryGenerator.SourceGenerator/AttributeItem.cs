@@ -77,7 +77,7 @@ internal class AttributeItem
     {
         var parameters = attribute.AttributeConstructor!.Parameters;
         var arguments = attribute.ConstructorArguments;
-        foreach (var (x, y) in parameters.Zip(arguments, (x, y) => (x, y)).Skip(1))
+        foreach (var (x, y) in parameters.Zip(arguments, (x, y) => (x, y)))
         {
             yield return (x.Name, y.ToDisplayValue());
         }
