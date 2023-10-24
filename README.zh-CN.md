@@ -71,7 +71,7 @@ public class Product2 : IProduct
 // SimpleFactory 静态类由本仓库提供。
 var factory = SimpleFactory
     .For<string, IProduct>()
-    // .WithCache() 是可选的，使用后将帮助实现“享元模式”，缓存已创建的实例（即多次创建 key 相同的实例，将返回同一个实例。）
+    // .WithCache() 是可选的一个装饰器，其缓存已创建的实例（即多次创建 key 相同的实例，将返回同一个实例。）
     .WithCache();
 IProduct product = factory.Create("product_a");
 ```

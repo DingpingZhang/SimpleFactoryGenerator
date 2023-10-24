@@ -72,7 +72,7 @@ public class Product2 : IProduct
 // The SimpleFactory static class are provided by this library.
 var factory = SimpleFactory
     .For<string, IProduct>()
-    // .WithCache() is optional and when used will help implement the *Flyweight Pattern*
+    // .WithCache() is optional decorator
     // that caches created instances (i.e. instances with the same key are created multiple times
     // and the same instance is returned.)
     .WithCache();
